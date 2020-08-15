@@ -12,7 +12,7 @@ function App (){
       <h1> {me} Homepage </h1>
       <Bio />
       <Blog />
-      <Books />
+      <Books /> 
     </div>
   )
 };
