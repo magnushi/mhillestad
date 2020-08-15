@@ -8,7 +8,7 @@ function Blog (){
     <h1> Here is my blog:</h1>
     
     {posts.map(post => (
-        <h2> {post.toUpperCase()} </h2>
+        <h4> {post.toUpperCase()} </h4>
     ))}
 
     </div>
