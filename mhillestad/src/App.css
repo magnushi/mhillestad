@@ -1,6 +1,10 @@
 .main{
   width : 100%;
-  margin : auto;
+  padding : 0 1em;
   color : #444;
+}
 
+.widget{
+  width : 66%;
+  margin : auto;
 }
