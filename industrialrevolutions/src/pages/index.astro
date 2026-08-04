@@ -1,0 +1,420 @@
+---
+import { PERSONAS, ENABLED_PERSONAS } from '../lib/personas';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canal Mania and the Philosophers Stone</title>
+    <meta
+      name="description"
+      content="A knowledge base of AI in the perspective of the industrial revolutions — in conversation with the Engineer and the Alchemist."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Canal Mania <span class="amp">&</span> the Philosophers Stone</h1>
+        <p class="tagline">A knowledge base of AI in the perspective of the industrial revolutions</p>
+        <div class="guides">
+          {
+            personas.map((p) => (
+              <span class={`guide guide-${p.id}`}>
+                <strong>{p.name}</strong> — {p.title}
+              </span>
+            ))
+          }
+        </div>
+      </header>
+
+      <section id="chat" aria-live="polite" aria-label="Conversation"></section>
+
+      <form id="composer" autocomplete="off">
+        <input
+          id="input"
+          type="text"
+          maxlength="2000"
+          placeholder="Ask about AI and the industrial revolutions…"
+          aria-label="Your message"
+          required
+        />
+        <button id="send" type="submit">Send</button>
+      </form>
+      <p class="footnote" id="status"></p>
+      <footer class="credits">
+        Built on 16 curated sources on the industrial revolutions and the AI revolution —
+        <a href={`${base}/sources`}>sources &amp; credits</a>. For educational and entertainment
+        purposes only.
+      </footer>
+    </main>
+
+    <script define:vars={{ base }}>
+      const NAMES = {
+        user: 'You',
+        guide: 'The Guide',
+        historian: 'The Historian',
+        technologist: 'The Technologist',
+      };
+
+      const chat = document.getElementById('chat');
+      const form = document.getElementById('composer');
+      const input = document.getElementById('input');
+      const sendBtn = document.getElementById('send');
+      const status = document.getElementById('status');
+
+      /** @type {{speaker: string, text: string}[]} */
+      const transcript = [];
+
+      function addBubble(speaker) {
+        const wrap = document.createElement('div');
+        wrap.className = `msg msg-${speaker}`;
+        const who = document.createElement('div');
+        who.className = 'who';
+        who.textContent = NAMES[speaker] ?? speaker;
+        const body = document.createElement('div');
+        body.className = 'body';
+        wrap.append(who, body);
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight;
+        return body;
+      }
+
+      function setBusy(busy) {
+        input.disabled = busy;
+        sendBtn.disabled = busy;
+        if (!busy) input.focus();
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        status.textContent = '';
+        transcript.push({ speaker: 'user', text });
+        addBubble('user').textContent = text;
+        setBusy(true);
+
+        try {
+          const res = await fetch(`${base}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: transcript }),
+          });
+
+          if (!res.ok || !res.body) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `Request failed (${res.status})`);
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let current = null; // { speaker, el, text }
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop() ?? '';
+            for (const part of parts) {
+              const line = part.trim();
+              if (!line.startsWith('data: ')) continue;
+              const event = JSON.parse(line.slice(6));
+              if (event.type === 'speaker') {
+                current = { speaker: event.speaker, el: addBubble(event.speaker), text: '' };
+              } else if (event.type === 'delta' && current) {
+                current.text += event.text;
+                current.el.textContent = current.text;
+                chat.scrollTop = chat.scrollHeight;
+              } else if (event.type === 'agent_done' && current) {
+                transcript.push({ speaker: current.speaker, text: current.text });
+                current = null;
+              } else if (event.type === 'notice') {
+                status.textContent = event.message;
+              } else if (event.type === 'error') {
+                status.textContent = event.message;
+              }
+            }
+          }
+        } catch (err) {
+          status.textContent = err.message || 'Something went wrong. Please try again.';
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      input.focus();
+    </script>
+
+    <style>
+      :root {
+        --paper: #f4efe5;
+        --paper-deep: #ece4d4;
+        --ink: #2b2620;
+        --ink-soft: #6b6154;
+        --guide: #5b5a2a;
+        --guide-soft: #ecead2;
+        --historian: #8a4a24;
+        --historian-soft: #f2e3d3;
+        --technologist: #1f6f78;
+        --technologist-soft: #e0edee;
+        --user: #4a4238;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Source Sans 3', system-ui, sans-serif;
+        display: flex;
+        justify-content: center;
+      }
+
+      main {
+        width: min(760px, 100%);
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        padding: 1.25rem 1rem 1rem;
+      }
+
+      header {
+        text-align: center;
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 0.9rem;
+      }
+
+      h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+        font-size: clamp(1.5rem, 4.5vw, 2.3rem);
+        margin: 0;
+        letter-spacing: 0.01em;
+      }
+
+      .amp {
+        font-style: italic;
+        color: var(--alchemist);
+      }
+
+      .tagline {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        color: var(--ink-soft);
+        margin: 0.35rem 0 0.7rem;
+        font-size: 0.98rem;
+      }
+
+      .guides {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem 1.4rem;
+        justify-content: center;
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+
+      .guide strong {
+        font-weight: 600;
+      }
+
+      .guide-guide strong {
+        color: var(--guide);
+      }
+
+      .guide-historian strong {
+        color: var(--historian);
+      }
+
+      .guide-technologist strong {
+        color: var(--technologist);
+      }
+
+      #chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.1rem 0.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      /* iMessage-style bubbles, in the page's paper palette */
+      .msg {
+        position: relative;
+        max-width: 75%;
+        border-radius: 1.15rem;
+        padding: 0.55rem 0.9rem 0.65rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        box-shadow: 0 1px 1px rgba(43, 38, 32, 0.08);
+      }
+
+      .who {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.2rem;
+        opacity: 0.8;
+      }
+
+      .msg-user {
+        align-self: flex-end;
+        background: var(--user);
+        color: var(--paper);
+        border-bottom-right-radius: 0.3rem;
+      }
+
+      /* small tail, like iMessage */
+      .msg-user::after,
+      .msg-guide::after,
+      .msg-historian::after,
+      .msg-technologist::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        width: 0.75rem;
+        height: 0.75rem;
+      }
+
+      .msg-user::after {
+        right: -0.35rem;
+        background: var(--user);
+        clip-path: polygon(0 0, 100% 100%, 0 100%);
+        border-bottom-left-radius: 0.2rem;
+      }
+
+      .msg-guide,
+      .msg-historian,
+      .msg-technologist {
+        align-self: flex-start;
+        border-bottom-left-radius: 0.3rem;
+      }
+
+      .msg-guide {
+        background: var(--guide-soft);
+      }
+
+      .msg-guide::after {
+        left: -0.35rem;
+        background: var(--guide-soft);
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        border-bottom-right-radius: 0.2rem;
+      }
+
+      .msg-guide .who {
+        color: var(--guide);
+      }
+
+      .msg-historian {
+        background: var(--historian-soft);
+      }
+
+      .msg-historian::after {
+        left: -0.35rem;
+        background: var(--historian-soft);
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        border-bottom-right-radius: 0.2rem;
+      }
+
+      .msg-historian .who {
+        color: var(--historian);
+      }
+
+      .msg-technologist {
+        background: var(--technologist-soft);
+      }
+
+      .msg-technologist::after {
+        left: -0.35rem;
+        background: var(--technologist-soft);
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        border-bottom-right-radius: 0.2rem;
+      }
+
+      .msg-technologist .who {
+        color: var(--technologist);
+      }
+
+      #composer {
+        display: flex;
+        gap: 0.5rem;
+        border-top: 1px solid var(--paper-deep);
+        padding-top: 0.75rem;
+      }
+
+      #input {
+        flex: 1;
+        font: inherit;
+        padding: 0.65rem 0.85rem;
+        border: 1px solid #c8bda9;
+        border-radius: 8px;
+        background: #fffdf8;
+        color: var(--ink);
+      }
+
+      #input:focus {
+        outline: 2px solid var(--technologist);
+        outline-offset: 1px;
+      }
+
+      #send {
+        font: inherit;
+        font-weight: 600;
+        padding: 0.65rem 1.2rem;
+        border: none;
+        border-radius: 8px;
+        background: var(--ink);
+        color: var(--paper);
+        cursor: pointer;
+      }
+
+      #send:disabled,
+      #input:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+
+      .footnote {
+        min-height: 1.1rem;
+        margin: 0.4rem 0 0;
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+
+      .credits {
+        margin-top: 0.35rem;
+        font-size: 0.72rem;
+        color: var(--ink-soft);
+        text-align: center;
+      }
+
+      .credits a {
+        color: var(--historian);
+      }
+    </style>
+  </body>
+</html>

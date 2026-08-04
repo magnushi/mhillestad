@@ -1,0 +1,155 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sources & credits — Canal Mania and the Philosophers Stone</title>
+    <meta name="description" content="Sources and credits for the Canal Mania and the Philosophers Stone knowledge base." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Sources <span class="amp">&</span> credits</h1>
+        <p class="back"><a href={`${base}/`}>← back to the conversation</a></p>
+      </header>
+
+      <section>
+        <p>
+          This research draws on 16 curated sources spanning two strands. The first strand — the
+          Industrial Revolution itself — rests on eleven works ranging from foundational economic
+          histories (Ashton's <em>The Industrial Revolution 1760–1830</em>, Landes's
+          <em>The Unbound Prometheus</em>, Hobsbawm's <em>Industry and Empire</em>) to modern
+          reinterpretations of why Britain industrialized first (Allen's
+          <em>The British Industrial Revolution in Global Perspective</em>, Mokyr's
+          <em>The Enlightened Economy</em>), social "history from below" (E. P. Thompson's
+          <em>The Making of the English Working Class</em>, Griffin's <em>Liberty's Dawn</em>),
+          narrative and popular history (Uglow's <em>The Lunar Men</em>, the
+          <a href="https://www.industrialrevolutionspod.com" target="_blank" rel="noopener"
+            >Industrial Revolutions podcast</a
+          >), and vetted reference and primary-source material (Encyclopædia Britannica plus a set
+          of digital archives including the Smithsonian and British History Online).
+        </p>
+        <p>
+          The second strand asks how today's AI wave compares. It draws on peer-reviewed economics
+          and expert commentary that frame AI as a general-purpose technology like steam or
+          electricity — Crafts's historical-perspective article, Brynjolfsson, Rock &amp;
+          Syverson's "Productivity J-Curve," Veldkamp &amp; Abis's work summarized by Columbia
+          Business School, a VoxDev conversation with economic historian Bruno Caprettini, and an
+          AEI piece on the AI–electricity parallel.
+        </p>
+      </section>
+
+      <section>
+        <h2>Built with</h2>
+        <ul>
+          <li>Sanity Knowledge Bases and Context</li>
+          <li>Anthropic (Haiku)</li>
+          <li>Astro</li>
+          <li>Netlify</li>
+        </ul>
+      </section>
+
+      <section>
+        <p class="notice">
+          This site is only for educational and entertainment purposes. No commercial use of this
+          knowledge base is permitted. Any reference should be quoted back to the original
+          sources.
+        </p>
+      </section>
+    </main>
+
+    <style>
+      :root {
+        --paper: #f4efe5;
+        --paper-deep: #ece4d4;
+        --ink: #2b2620;
+        --ink-soft: #6b6154;
+        --historian: #8a4a24;
+        --technologist: #1f6f78;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+      }
+
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Source Sans 3', system-ui, sans-serif;
+        display: flex;
+        justify-content: center;
+      }
+
+      main {
+        width: min(720px, 100%);
+        padding: 1.5rem 1.25rem 3rem;
+      }
+
+      header {
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 0.8rem;
+        margin-bottom: 1.2rem;
+      }
+
+      h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+        font-size: clamp(1.4rem, 4vw, 2rem);
+        margin: 0;
+      }
+
+      h2 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin: 1.6rem 0 0.4rem;
+      }
+
+      .amp {
+        font-style: italic;
+        color: var(--historian);
+      }
+
+      .back {
+        margin: 0.5rem 0 0;
+        font-size: 0.85rem;
+      }
+
+      a {
+        color: var(--technologist);
+      }
+
+      p {
+        line-height: 1.6;
+      }
+
+      ul {
+        line-height: 1.7;
+        padding-left: 1.3rem;
+      }
+
+      .notice {
+        border-top: 1px solid var(--paper-deep);
+        padding-top: 1rem;
+        font-size: 0.88rem;
+        color: var(--ink-soft);
+        font-style: italic;
+      }
+    </style>
+  </body>
+</html>

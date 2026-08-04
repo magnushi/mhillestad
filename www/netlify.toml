@@ -1,0 +1,5 @@
+# Static site, no build step. In Netlify, set this site's base directory
+# to "www" so this file applies.
+[build]
+  command = ""
+  publish = "."

@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Environment variables to set in the Netlify UI (Site settings → Environment):
+#   ANTHROPIC_API_KEY   — Anthropic API key
+#   SANITY_MCP_URL      — Sanity MCP endpoint
+#   SANITY_MCP_TOKEN    — Sanity API token (read)
+# Do NOT set KB_OPTIONAL in production.

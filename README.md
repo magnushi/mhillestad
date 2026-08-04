@@ -1,24 +1,35 @@
 # mhillestad.com
 
-Personal site for Magnus Hillestad, CLI-style. Pure static — one `index.html`,
-no build step, no dependencies.
+Monorepo for Magnus Hillestad's websites, deployed as two Netlify sites.
 
-- Commands: `help` / `ls`, `about`, `books`, `blog`, `investments`, `clear`.
-  Type them or click them.
-- `books` and `blog` currently print "to come".
-- `investments` lists funds and angel investments with links.
+| Folder | Site | What it is |
+|---|---|---|
+| `www/` | www.mhillestad.com | CLI-style personal site. Pure static, one `index.html`, no build. |
+| `industrialrevolutions/` | served at www.mhillestad.com/IndustrialRevolutions | "Canal Mania & the Philosophers Stone" — AI chat about the industrial revolutions and the AI revolution. Astro + Anthropic API + Sanity knowledge base. See its own README. |
 
-## Run locally
+## Netlify setup
 
-Open `index.html` in a browser, or:
+**Site 1 — main site (`www.mhillestad.com`):**
+- Base directory: `www`
+- No build command, publish `.` (see `www/netlify.toml`)
+- `www/_redirects` proxies `/IndustrialRevolutions/*` to site 2 — fill in
+  site 2's Netlify name and uncomment once it's deployed.
+
+**Site 2 — chat site:**
+- Base directory: `industrialrevolutions`
+- Build `npm run build`, publish `dist` (see `industrialrevolutions/netlify.toml`)
+- Environment variables: `ANTHROPIC_API_KEY`, `SANITY_MCP_URL`,
+  `SANITY_MCP_TOKEN`. Do **not** set `KB_OPTIONAL` in production.
+
+## Local development
 
 ```sh
-npx serve .
+# personal site
+open www/index.html            # or: npx serve www
+
+# chat site
+cd industrialrevolutions
+npm install
+cp .env.example .env           # fill in keys
+npm run dev                    # → http://localhost:4321/IndustrialRevolutions
 ```
-
-## Deploy (Netlify)
-
-Deploy this folder as the site serving `www.mhillestad.com` (publish directory:
-repo root). `_redirects` contains a commented-out proxy rule that will serve
-the Industrial Revolutions chat site under `/IndustrialRevolutions` once that
-project is deployed — fill in its Netlify site name and uncomment.
