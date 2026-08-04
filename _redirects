@@ -1,0 +1,6 @@
+# Proxy the Industrial Revolutions chat site (its own Netlify deploy) under
+# a path of this domain. Uncomment and fill in the site name once the
+# indrevai-website project is deployed to Netlify:
+#
+# /IndustrialRevolutions/*  https://REPLACE-WITH-SITE-NAME.netlify.app/IndustrialRevolutions/:splat  200
+# /IndustrialRevolutions    https://REPLACE-WITH-SITE-NAME.netlify.app/IndustrialRevolutions          200

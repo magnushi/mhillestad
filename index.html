@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Magnus Hillestad</title>
+    <meta name="description" content="Magnus Hillestad — about, books, blog, investments." />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --fg: #c9d1d9;
+        --dim: #8b949e;
+        --green: #3fb950;
+        --link: #58a6ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 1.5rem 1rem 4rem;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      .prompt {
+        color: var(--green);
+      }
+
+      .cmd-line {
+        margin-top: 1rem;
+      }
+
+      .out {
+        white-space: pre-wrap;
+        color: var(--fg);
+      }
+
+      .out .dim {
+        color: var(--dim);
+      }
+
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      button.cmd {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        color: var(--link);
+        cursor: pointer;
+      }
+
+      button.cmd:hover {
+        text-decoration: underline;
+      }
+
+      #input-line {
+        display: flex;
+        margin-top: 1rem;
+        align-items: baseline;
+      }
+
+      #stdin {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font: inherit;
+        color: var(--fg);
+        caret-color: var(--green);
+        padding: 0 0 0 0.5ch;
+      }
+
+      table.inv {
+        border-collapse: collapse;
+        margin: 0.25rem 0 0.5rem 2ch;
+      }
+
+      table.inv td {
+        padding: 0 2.5ch 0 0;
+        vertical-align: baseline;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div id="screen"></div>
+      <form id="input-line" autocomplete="off">
+        <span class="prompt" id="ps1">magnus@mhillestad.com:~$</span>
+        <input id="stdin" type="text" aria-label="terminal input" autofocus />
+      </form>
+    </main>
+
+    <script>
+      const PS1 = 'magnus@mhillestad.com:~$';
+      const screen = document.getElementById('screen');
+      const stdin = document.getElementById('stdin');
+
+      const FUNDS = [
+        ['ICONIQ', 'https://www.iconiqcapital.com'],
+        ['Threshold', 'https://threshold.vc'],
+        ['Lead Edge Capital', 'https://www.leadedgecapital.com'],
+        ['Heavybit', 'https://www.heavybit.com'],
+        ['Alliance Venture', 'https://www.alliance.vc'],
+        ['Nordic Web Ventures', 'https://thenordicweb.com'],
+      ];
+
+      const ANGEL = [
+        ['Tailscale', 'https://tailscale.com'],
+        ['Koala (now Cursor)', 'https://cursor.com'],
+        ['Linzumi', 'https://linzumi.com'],
+        ['Akuity', 'https://akuity.io'],
+        ['Even.biz', 'https://even.biz'],
+        ['Touchless', 'https://touchless.com'],
+        ['Kosli', 'https://www.kosli.com/'],
+        ['Eraser', 'https://www.eraser.io'],
+        ['Sanity', 'https://www.sanity.io'],
+        ['Dignio', 'https://dignio.com'],
+      ];
+
+      function el(tag, cls, text) {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+      }
+
+      function link(name, url) {
+        const a = el('a', null, name);
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        return a;
+      }
+
+      function invTable(rows) {
+        const t = el('table', 'inv');
+        for (const [name, url] of rows) {
+          const tr = el('tr');
+          const td1 = el('td');
+          td1.appendChild(link(name, url));
+          const td2 = el('td', 'dim', url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''));
+          tr.append(td1, td2);
+          t.appendChild(tr);
+        }
+        return t;
+      }
+
+      const COMMANDS = {
+        help() {
+          const out = el('div', 'out');
+          out.append('available commands:\n\n');
+          for (const [name, desc] of [
+            ['about', 'who is magnus'],
+            ['books', 'reading list'],
+            ['blog', 'writing'],
+            ['investments', 'funds & angel investments'],
+            ['clear', 'clear the screen'],
+          ]) {
+            const b = el('button', 'cmd', name);
+            b.addEventListener('click', () => run(name));
+            out.append('  ', b, '\t' + desc + '\n');
+          }
+          return out;
+        },
+
+        ls() {
+          return COMMANDS.help();
+        },
+
+        about() {
+          const out = el('div', 'out');
+          out.append('Magnus Hillestad.\n');
+          out.append('Day job: ');
+          out.append(link('sanity.io', 'https://www.sanity.io'));
+          out.append('\nSide project: ');
+          out.append(
+            link('/IndustrialRevolutions', '/IndustrialRevolutions'),
+          );
+          out.append(
+            ' — chat with two AI experts about the industrial\nrevolutions and the AI revolution.\n',
+          );
+          out.append('Investor — see ');
+          const b = el('button', 'cmd', 'investments');
+          b.addEventListener('click', () => run('investments'));
+          out.append(b, '.\n');
+          return out;
+        },
+
+        books() {
+          return el('div', 'out', 'to come\n');
+        },
+
+        blog() {
+          return el('div', 'out', 'to come\n');
+        },
+
+        investments() {
+          const out = el('div', 'out');
+          out.append('funds/\n');
+          out.appendChild(invTable(FUNDS));
+          out.append('\nangel/\n');
+          out.appendChild(invTable(ANGEL));
+          return out;
+        },
+
+        clear() {
+          screen.innerHTML = '';
+          return null;
+        },
+      };
+
+      function run(cmd) {
+        const line = el('div', 'cmd-line');
+        line.append(el('span', 'prompt', PS1), ' ' + cmd);
+        screen.appendChild(line);
+
+        const handler = COMMANDS[cmd];
+        if (handler) {
+          const out = handler();
+          if (out) screen.appendChild(out);
+        } else if (cmd) {
+          screen.appendChild(
+            el('div', 'out', `command not found: ${cmd} — try \`help\`\n`),
+          );
+        }
+        stdin.focus();
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+
+      document.getElementById('input-line').addEventListener('submit', (e) => {
+        e.preventDefault();
+        run(stdin.value.trim().toLowerCase());
+        stdin.value = '';
+      });
+
+      // keep focus on the terminal input (but never steal a text selection)
+      document.body.addEventListener('click', () => {
+        if (!window.getSelection()?.toString()) stdin.focus();
+      });
+
+      run('help');
+    </script>
+  </body>
+</html>
