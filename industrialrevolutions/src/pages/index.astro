@@ -12,7 +12,7 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
     <title>Canal Mania and the Philosophers Stone</title>
     <meta
       name="description"
-      content="A knowledge base of AI in the perspective of the industrial revolutions — in conversation with the Engineer and the Alchemist."
+      content="A knowledge base of AI in the perspective of the industrial revolutions — in conversation with the Guide."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -134,12 +134,25 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
               const event = JSON.parse(line.slice(6));
               if (event.type === 'speaker') {
                 current = { speaker: event.speaker, el: addBubble(event.speaker), text: '' };
+              } else if (event.type === 'searching' && current) {
+                // A knowledge-base lookup started: anything said before it was
+                // narration, so drop it and show progress instead.
+                current.text = '';
+                current.el.textContent = 'Searching the knowledge base…';
+                current.el.classList.add('searching');
+                chat.scrollTop = chat.scrollHeight;
               } else if (event.type === 'delta' && current) {
                 current.text += event.text;
                 current.el.textContent = current.text;
+                current.el.classList.remove('searching');
                 chat.scrollTop = chat.scrollHeight;
               } else if (event.type === 'agent_done' && current) {
-                transcript.push({ speaker: current.speaker, text: current.text });
+                // An empty reply would fail validation if replayed next turn.
+                if (current.text) {
+                  transcript.push({ speaker: current.speaker, text: current.text });
+                } else {
+                  current.el.parentElement?.remove();
+                }
                 current = null;
               } else if (event.type === 'notice') {
                 status.textContent = event.message;
@@ -215,7 +228,7 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
 
       .amp {
         font-style: italic;
-        color: var(--alchemist);
+        color: var(--historian);
       }
 
       .tagline {
@@ -414,6 +427,11 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
 
       .credits a {
         color: var(--historian);
+      }
+
+      .body.searching {
+        font-style: italic;
+        color: var(--ink-soft);
       }
     </style>
   </body>

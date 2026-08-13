@@ -255,6 +255,15 @@ async function streamAgentReply(
     for (let i = 0; i <= MAX_PAUSE_CONTINUATIONS; i++) {
       const stream = client.beta.messages.stream(buildParams(messages, withMcp));
       for await (const event of stream) {
+        // The model often narrates before it searches ("I'll look that up…").
+        // A text block is only the real answer if no further tool call follows
+        // it, so each time a search starts we discard the text collected so far
+        // — otherwise the narration reaches the visitor and, worse, gets stored
+        // as this persona's reply and replayed as context on later turns.
+        if (event.type === 'content_block_start' && event.content_block.type === 'mcp_tool_use') {
+          full = '';
+          ctx.send({ type: 'searching', speaker: persona.id });
+        }
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
           full += event.delta.text;
           ctx.send({ type: 'delta', speaker: persona.id, text: event.delta.text });

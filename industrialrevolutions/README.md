@@ -1,7 +1,6 @@
 # Canal Mania & the Philosophers Stone
 
-A chat-only website where two AI guides — **The Engineer** (canal-mania era civil
-engineer) and **The Alchemist** (natural philosopher chasing the Stone) — discuss
+A chat-only website where a resident AI expert — **The Guide** — discusses
 artificial intelligence through the lens of the industrial revolutions, together
 with the visitor. No login required.
 
@@ -9,20 +8,39 @@ with the visitor. No login required.
 
 - **Astro** site with a single chat page and one streaming API endpoint.
 - The endpoint calls the **Anthropic Messages API** (`claude-haiku-4-5`, chosen
-  for cost) once per persona per user message. The Alchemist sees the Engineer's
-  fresh reply, so the two react to each other.
+  for cost) once per active persona per user message.
 - Content grounding comes from the **Sanity MCP server** via the Anthropic
   **MCP connector** — the API connects to Sanity server-side and performs the
   knowledge-base lookups itself. No agent framework, no tool loop.
 - The knowledge base is **required**: if the MCP server is unconfigured or
-  unreachable, the guides refuse to answer (fail closed) rather than falling
+  unreachable, the Guide refuses to answer (fail closed) rather than falling
   back to general knowledge.
 
 ```
 src/pages/index.astro    chat UI (streams via SSE)
 src/pages/api/chat.ts    POST endpoint → Anthropic API + MCP connector
-src/lib/personas.ts      the two system prompts
+src/lib/personas.ts      system prompts + which personas are active
 ```
+
+## Personas
+
+`src/lib/personas.ts` defines three personas and an `ENABLED_PERSONAS` list that
+controls which of them actually answer:
+
+| id | name | scope |
+|---|---|---|
+| `guide` | The Guide | both the industrial revolutions and the AI revolution |
+| `historian` | The Historian | the industrial revolutions |
+| `technologist` | The Technologist | the AI revolution |
+
+The site currently runs **one persona**: `ENABLED_PERSONAS = ['guide']`. With a
+single entry the moderator step is skipped and the Guide answers everything.
+
+Setting two or more (e.g. `['historian', 'technologist']`) restores the
+multi-expert conversation: a moderator call first picks who should speak, each
+speaker is called in turn, and later speakers see the earlier replies from the
+same turn, so they react to each other. The chat UI and the header byline read
+from `ENABLED_PERSONAS`, so no other code changes are needed.
 
 ## Running locally
 
