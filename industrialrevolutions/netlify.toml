@@ -2,6 +2,17 @@
   command = "npm run build"
   publish = "dist"
 
+# Astro prefixes asset URLs with `base`, so the page requests
+# /IndustrialRevolutions/_astro/*, but the files are written to dist/_astro/*
+# and Netlify publishes dist at the root — the request 404s and the site loads
+# unstyled. Rewrite (status 200) to where the files actually are. This only
+# bites in production: `astro dev` serves the whole site under the base path,
+# so dev and prod agree on the URL there.
+[[redirects]]
+  from = "/IndustrialRevolutions/_astro/*"
+  to = "/_astro/:splat"
+  status = 200
+
 # Environment variables to set in the Netlify UI (Site settings → Environment):
 #   ANTHROPIC_API_KEY   — Anthropic API key
 #   SANITY_MCP_URL      — Sanity MCP endpoint
