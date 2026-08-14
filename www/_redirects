@@ -1,6 +1,5 @@
-# Proxy the Industrial Revolutions chat site (its own Netlify deploy) under
-# a path of this domain. Uncomment and fill in the site name once the
-# indrevai-website project is deployed to Netlify:
-#
-# /IndustrialRevolutions/*  https://REPLACE-WITH-SITE-NAME.netlify.app/IndustrialRevolutions/:splat  200
-# /IndustrialRevolutions    https://REPLACE-WITH-SITE-NAME.netlify.app/IndustrialRevolutions          200
+# Proxy the Industrial Revolutions chat site (its own Netlify deploy, site
+# "mhillestad-indrev") under a path of this domain. Status 200 makes these
+# rewrites rather than redirects, so the visitor keeps seeing this domain.
+/IndustrialRevolutions/*  https://mhillestad-indrev.netlify.app/IndustrialRevolutions/:splat  200
+/IndustrialRevolutions    https://mhillestad-indrev.netlify.app/IndustrialRevolutions          200
