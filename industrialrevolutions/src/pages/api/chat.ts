@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { PERSONAS, ENABLED_PERSONAS, type Persona } from '../../lib/personas';
+import { getOutline, outlineBlock } from '../../lib/knowledgeBase';
 
 export const prerender = false;
 
@@ -96,6 +97,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ error: 'The knowledge base is not configured, so the experts cannot answer.' }, 503);
   }
 
+  // Preloaded once per instance; null falls back to the model fetching it.
+  const outline = mcpAvailable ? await getOutline(mcpUrl!, mcpToken!) : null;
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
@@ -118,6 +122,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             mcpToken,
             mcpAvailable,
             kbOptional,
+            outline,
             send,
           });
           transcript.push({ speaker: persona.id, text });
@@ -221,16 +226,32 @@ async function streamAgentReply(
     mcpToken?: string;
     mcpAvailable: boolean;
     kbOptional: boolean;
+    outline: string | null;
     send: (data: Record<string, unknown>) => void;
   },
 ): Promise<string> {
+  // Marking the outline ephemeral lets the API reuse it across requests instead
+  // of re-reading ~10k tokens every time — the difference between ~11s and ~5s.
+  const systemFor = (withOutline: boolean): Anthropic.Beta.BetaTextBlockParam[] | string =>
+    withOutline && ctx.outline
+      ? [
+          { type: 'text', text: persona.system },
+          {
+            type: 'text',
+            text: outlineBlock(ctx.outline),
+            cache_control: { type: 'ephemeral' },
+          },
+        ]
+      : persona.system;
+
   const buildParams = (
     messages: Anthropic.Beta.BetaMessageParam[],
     withMcp: boolean,
+    withOutline: boolean,
   ): Anthropic.Beta.MessageCreateParamsStreaming => ({
     model: MODEL,
     max_tokens: 1024,
-    system: persona.system,
+    system: systemFor(withOutline),
     messages,
     stream: true,
     betas: ['mcp-client-2025-11-20'],
@@ -249,11 +270,11 @@ async function streamAgentReply(
       : {}),
   });
 
-  const run = async (withMcp: boolean): Promise<string> => {
+  const run = async (withMcp: boolean, withOutline: boolean): Promise<string> => {
     let messages = toApiMessages(transcript, persona.id);
     let full = '';
     for (let i = 0; i <= MAX_PAUSE_CONTINUATIONS; i++) {
-      const stream = client.beta.messages.stream(buildParams(messages, withMcp));
+      const stream = client.beta.messages.stream(buildParams(messages, withMcp, withOutline));
       for await (const event of stream) {
         // The model often narrates before it searches ("I'll look that up…").
         // A text block is only the real answer if no further tool call follows
@@ -280,10 +301,18 @@ async function streamAgentReply(
 
   if (!ctx.mcpAvailable) {
     // Only reachable with KB_OPTIONAL=true (local development).
-    return run(false);
+    return run(false, false);
   }
   try {
-    return await run(true);
+    const reply = await run(true, true);
+    if (reply.trim() || !ctx.outline) return reply;
+    // The model occasionally answers a preloaded outline with a malformed tool
+    // call, which cannot execute and leaves no text at all. Better a slower
+    // reply than none: fall back to the unaided path, where it fetches the
+    // outline itself. `searching` clears whatever the client is showing.
+    console.warn(`Empty reply for ${persona.id} with preloaded outline; retrying without it.`);
+    ctx.send({ type: 'searching', speaker: persona.id });
+    return await run(true, false);
   } catch (err) {
     if (!ctx.kbOptional) throw err; // production: fail closed
     console.warn(`MCP-backed reply failed for ${persona.id}; KB_OPTIONAL fallback:`, err);
