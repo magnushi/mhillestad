@@ -95,6 +95,82 @@ export async function getOutline(url: string, token: string): Promise<string | n
 }
 
 /**
+ * Run a knowledge-base tool ourselves.
+ *
+ * Normally the Anthropic MCP connector executes these server-side. But when the
+ * model emits arguments that do not match the tool's schema — most often
+ * `paths` as a JSON-encoded string rather than an array — the connector cannot
+ * run the call, and it arrives as an ordinary client-side `tool_use` instead.
+ * Executing it here (after repairing the arguments) turns a dead turn into a
+ * real answer.
+ */
+export async function callTool(
+  url: string,
+  token: string,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<string> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'content-type': 'application/json',
+    accept: 'application/json, text/event-stream',
+  };
+
+  const init = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'canal-mania', version: '1' },
+      },
+    }),
+  });
+  const sessionId = init.headers.get('mcp-session-id');
+  if (sessionId) headers['mcp-session-id'] = sessionId;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: { name, arguments: repairArgs(args) },
+    }),
+  });
+  const payload = parsePayload(await res.text()) as
+    | { result?: { content?: { text?: string }[] }; error?: { message?: string } }
+    | null;
+
+  if (payload?.error) throw new Error(payload.error.message ?? 'knowledge base call failed');
+  return (payload?.result?.content ?? [])
+    .map((c) => c.text ?? '')
+    .join('\n')
+    .trim();
+}
+
+/** Coerce array-typed arguments the model sent as strings back into arrays. */
+function repairArgs(args: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...args };
+  for (const key of ['paths']) {
+    const v = out[key];
+    if (typeof v !== 'string') continue;
+    try {
+      const parsed = JSON.parse(v);
+      out[key] = Array.isArray(parsed) ? parsed : [v];
+    } catch {
+      out[key] = [v];
+    }
+  }
+  return out;
+}
+
+/**
  * System-prompt block wrapping the outline.
  *
  * Keep this wording minimal. Describing the read tool's arguments in prose —

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { PERSONAS, ENABLED_PERSONAS, type Persona } from '../../lib/personas';
-import { getOutline, outlineBlock } from '../../lib/knowledgeBase';
+import { getOutline, outlineBlock, callTool } from '../../lib/knowledgeBase';
 
 export const prerender = false;
 
@@ -9,6 +9,9 @@ const MODEL = 'claude-haiku-4-5';
 const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 2000;
 const MAX_PAUSE_CONTINUATIONS = 4;
+// One nudge, not four. Each costs a full round trip, and chaining them once
+// took a reply to 79 seconds — slower is its own kind of broken.
+const MAX_NARRATION_RETRIES = 1;
 
 // Basic per-IP throttle: the site has no login, so cap request volume.
 const RATE_LIMIT = 8; // requests
@@ -22,6 +25,20 @@ function rateLimited(ip: string): boolean {
   hits.set(ip, recent);
   return recent.length > RATE_LIMIT;
 }
+
+// "I'll search the knowledge base…", "Now let me look that up…" — an
+// announcement of a search rather than an answer. Requires both an intent
+// opener and a lookup verb, so ordinary openings ("Let me be clear…") pass.
+const NARRATION =
+  /^\s*(?:i(?:'|’)?ll|i will|i'm going to|i am going to|let me|now let me|first,? let me)\b[^.!?]{0,80}?\b(?:search|look|check|read|find|consult|see what|dig)\b/i;
+
+function isNarration(text: string): boolean {
+  const t = text.trim();
+  return t.length > 0 && NARRATION.test(t);
+}
+
+const FINISH_NUDGE =
+  'Answer the question now, grounded in the knowledge base. Do not describe what you are about to do — reply with the answer itself.';
 
 interface TranscriptMessage {
   speaker: 'user' | Persona['id'];
@@ -273,6 +290,7 @@ async function streamAgentReply(
   const run = async (withMcp: boolean, withOutline: boolean): Promise<string> => {
     let messages = toApiMessages(transcript, persona.id);
     let full = '';
+    let narrationRetries = 0;
     for (let i = 0; i <= MAX_PAUSE_CONTINUATIONS; i++) {
       const stream = client.beta.messages.stream(buildParams(messages, withMcp, withOutline));
       for await (const event of stream) {
@@ -291,10 +309,75 @@ async function streamAgentReply(
         }
       }
       const final = await stream.finalMessage();
-      if (final.stop_reason !== 'pause_turn') break;
-      // Server-side MCP work paused mid-turn: append the partial assistant
-      // turn and re-send so the API resumes where it left off.
-      messages = [...messages, { role: 'assistant', content: final.content }];
+
+      // A client-side tool_use means the connector could not run the call
+      // itself (bad arguments). Run it here, hand back the result, and let the
+      // model carry on rather than ending the turn with nothing to say.
+      const clientCalls = final.content.filter(
+        (b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use',
+      );
+      if (clientCalls.length > 0 && ctx.mcpUrl && ctx.mcpToken) {
+        ctx.send({ type: 'searching', speaker: persona.id });
+        full = '';
+        const results = await Promise.all(
+          clientCalls.map(async (call) => {
+            try {
+              const text = await callTool(
+                ctx.mcpUrl!,
+                ctx.mcpToken!,
+                call.name,
+                (call.input ?? {}) as Record<string, unknown>,
+              );
+              return { type: 'tool_result' as const, tool_use_id: call.id, content: text };
+            } catch (err) {
+              console.warn(`Local execution of ${call.name} failed:`, err);
+              return {
+                type: 'tool_result' as const,
+                tool_use_id: call.id,
+                content: 'That lookup failed. Answer from what you already have.',
+                is_error: true,
+              };
+            }
+          }),
+        );
+        messages = [
+          ...messages,
+          { role: 'assistant', content: final.content },
+          { role: 'user', content: results },
+        ];
+        continue;
+      }
+
+      if (final.stop_reason === 'pause_turn') {
+        // Server-side MCP work paused mid-turn: append the partial assistant
+        // turn and re-send so the API resumes where it left off.
+        messages = [...messages, { role: 'assistant', content: final.content }];
+        continue;
+      }
+      // The turn is over. If the model announced a search and then stopped
+      // without making one, that announcement is all the visitor would see —
+      // they end up asking "did you find the answer?". Nothing cleared it,
+      // because only a following tool call does that. Hand its own words back
+      // and make it finish the job.
+      if (isNarration(full) && narrationRetries < MAX_NARRATION_RETRIES) {
+        narrationRetries++;
+        messages = [
+          ...messages,
+          { role: 'assistant', content: final.content },
+          { role: 'user', content: FINISH_NUDGE },
+        ];
+        full = '';
+        ctx.send({ type: 'searching', speaker: persona.id });
+        continue;
+      }
+      break;
+    }
+    // Nudging did not land. Narration is worse than nothing here: the caller
+    // treats an empty reply as a failure and retries or surfaces an error,
+    // whereas returning it would show the visitor a promise to go and look.
+    if (isNarration(full)) {
+      console.warn(`${persona.id} kept narrating after ${narrationRetries} nudge(s); discarding.`);
+      return '';
     }
     return full;
   };
@@ -312,7 +395,11 @@ async function streamAgentReply(
     // outline itself. `searching` clears whatever the client is showing.
     console.warn(`Empty reply for ${persona.id} with preloaded outline; retrying without it.`);
     ctx.send({ type: 'searching', speaker: persona.id });
-    return await run(true, false);
+    const retried = await run(true, false);
+    // Still nothing. Throwing puts a visible message on screen; returning ''
+    // would leave the visitor watching an empty bubble with no idea why.
+    if (!retried.trim()) throw new Error(`${persona.id} produced no answer`);
+    return retried;
   } catch (err) {
     if (!ctx.kbOptional) throw err; // production: fail closed
     console.warn(`MCP-backed reply failed for ${persona.id}; KB_OPTIONAL fallback:`, err);
@@ -320,7 +407,7 @@ async function streamAgentReply(
       type: 'notice',
       message: 'Dev mode: knowledge base unreachable — answering from general knowledge.',
     });
-    return run(false);
+    return run(false, false);
   }
 }
 
