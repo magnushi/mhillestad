@@ -75,6 +75,89 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
       /** @type {{speaker: string, text: string}[]} */
       const transcript = [];
 
+      /**
+       * Render the small slice of markdown the experts are asked to produce:
+       * paragraphs, bullet and numbered lists, headings, bold, italic, inline
+       * code and links.
+       *
+       * This output goes through innerHTML, so everything is HTML-escaped
+       * first and links are restricted to http(s) — the text comes from a model
+       * and must be treated as untrusted. Re-rendered from scratch on every
+       * delta, which also means half-written syntax simply resolves itself as
+       * the rest of the token arrives.
+       */
+      function renderMarkdown(src) {
+        const esc = (s) =>
+          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        const inline = (s) =>
+          esc(s)
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+            .replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>')
+            .replace(
+              /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+              '<a href="$2" target="_blank" rel="noopener">$1</a>',
+            );
+
+        let html = '';
+        let list = null;
+        let para = [];
+        const flushPara = () => {
+          if (para.length) {
+            html += `<p>${inline(para.join(' '))}</p>`;
+            para = [];
+          }
+        };
+        const closeList = () => {
+          if (list) {
+            html += `</${list}>`;
+            list = null;
+          }
+        };
+
+        for (const raw of src.split('\n')) {
+          const line = raw.replace(/\s+$/, '');
+          if (!line.trim()) {
+            flushPara();
+            closeList();
+            continue;
+          }
+          const heading = line.match(/^\s{0,3}(#{1,6})\s+(.*)$/);
+          const bullet = line.match(/^\s*[-*+]\s+(.*)$/);
+          const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/);
+
+          if (heading) {
+            flushPara();
+            closeList();
+            html += `<h4>${inline(heading[2])}</h4>`;
+          } else if (bullet) {
+            flushPara();
+            if (list !== 'ul') {
+              closeList();
+              html += '<ul>';
+              list = 'ul';
+            }
+            html += `<li>${inline(bullet[1])}</li>`;
+          } else if (numbered) {
+            flushPara();
+            if (list !== 'ol') {
+              closeList();
+              html += '<ol>';
+              list = 'ol';
+            }
+            html += `<li>${inline(numbered[1])}</li>`;
+          } else {
+            closeList();
+            para.push(line);
+          }
+        }
+        flushPara();
+        closeList();
+        return html;
+      }
+
       function addBubble(speaker) {
         const wrap = document.createElement('div');
         wrap.className = `msg msg-${speaker}`;
@@ -140,11 +223,13 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
                 current.text = '';
                 current.el.textContent = 'Searching the knowledge base…';
                 current.el.classList.add('searching');
+                current.el.classList.remove('md');
                 chat.scrollTop = chat.scrollHeight;
               } else if (event.type === 'delta' && current) {
                 current.text += event.text;
-                current.el.textContent = current.text;
+                current.el.innerHTML = renderMarkdown(current.text);
                 current.el.classList.remove('searching');
+                current.el.classList.add('md');
                 chat.scrollTop = chat.scrollHeight;
               } else if (event.type === 'agent_done' && current) {
                 // An empty reply would fail validation if replayed next turn.
@@ -431,6 +516,63 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
       .body.searching {
         font-style: italic;
         color: var(--ink-soft);
+      }
+
+      /* Rendered markdown. The bubble sets `white-space: pre-wrap` for typed
+         messages; block elements bring their own spacing, so turn it off here
+         or every tag gains a phantom blank line. */
+      .body.md {
+        white-space: normal;
+      }
+
+      .body.md > :first-child {
+        margin-top: 0;
+      }
+
+      .body.md > :last-child {
+        margin-bottom: 0;
+      }
+
+      .body.md p {
+        margin: 0 0 0.5rem;
+      }
+
+      .body.md ul,
+      .body.md ol {
+        margin: 0.3rem 0 0.55rem;
+        padding-left: 1.35rem;
+      }
+
+      .body.md li {
+        margin: 0.15rem 0;
+      }
+
+      .body.md li::marker {
+        color: var(--ink-soft);
+      }
+
+      .body.md h4 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin: 0.7rem 0 0.3rem;
+      }
+
+      .body.md strong {
+        font-weight: 600;
+      }
+
+      .body.md code {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 0.88em;
+        background: rgba(43, 38, 32, 0.07);
+        padding: 0.05em 0.3em;
+        border-radius: 3px;
+      }
+
+      .body.md a {
+        color: inherit;
+        text-decoration: underline;
       }
     </style>
   </body>
