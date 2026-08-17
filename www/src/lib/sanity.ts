@@ -49,6 +49,8 @@ export interface Command {
   /** `builtin` commands run code in the site; `content` commands print `body`. */
   kind?: 'content' | 'builtin';
   builtinId?: string;
+  /** Target for the `open` builtin. */
+  url?: string;
   body?: BodyBlock[];
 }
 
@@ -116,7 +118,7 @@ const QUERY = `{
     "bootCommand": bootCommand->name,
     "commands": commands[]{
       "listed": coalesce(listed, true),
-      "command": command->{name, aliases, description, kind, builtinId, body}
+      "command": command->{name, aliases, description, kind, builtinId, url, body}
     },
     "investmentGroups": investmentGroups[]{
       key,

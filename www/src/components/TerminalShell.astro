@@ -3,7 +3,7 @@
 // preview, so both behave identically.
 interface Props {
   outputs: Record<string, string>;
-  builtins: Record<string, string>;
+  builtins: Record<string, { id: string; url?: string }>;
   notFoundMessage: string;
   prompt: string;
   bootCommand: string;
@@ -153,12 +153,30 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
     // without touching this file.
     const builtin = Object.prototype.hasOwnProperty.call(BUILTINS, cmd) ? BUILTINS[cmd] : null;
 
-    if (builtin === 'clear') {
+    if (builtin?.id === 'clear') {
       screen.innerHTML = '';
-    } else if (builtin === 'snake') {
+    } else if (builtin?.id === 'snake') {
       startSnake();
       window.scrollTo(0, document.body.scrollHeight);
       return;
+    } else if (builtin?.id === 'open') {
+      const out = document.createElement('div');
+      out.className = 'out';
+      if (builtin.url) {
+        // Say where we are going and leave a clickable link, since a popup
+        // blocker can swallow window.open without any visible result.
+        out.append('opening ');
+        const a = document.createElement('a');
+        a.href = builtin.url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = builtin.url;
+        out.append(a, '\n');
+        window.open(builtin.url, '_blank', 'noopener');
+      } else {
+        out.textContent = 'nothing configured to open\n';
+      }
+      screen.appendChild(out);
     } else if (Object.prototype.hasOwnProperty.call(OUTPUTS, cmd)) {
       const out = document.createElement('div');
       out.className = 'out';

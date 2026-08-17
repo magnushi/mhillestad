@@ -7,8 +7,8 @@ import type { SiteContent } from './sanity';
 export interface TerminalData {
   /** Command (and alias) name -> rendered HTML, for text commands. */
   outputs: Record<string, string>;
-  /** Command (and alias) name -> builtin id, for commands backed by code. */
-  builtins: Record<string, string>;
+  /** Command (and alias) name -> the builtin it runs, plus any config it needs. */
+  builtins: Record<string, { id: string; url?: string }>;
   notFoundMessage: string;
 }
 
@@ -19,7 +19,7 @@ export function buildTerminalData(content: SiteContent): TerminalData {
   const slots = content.homepage?.commands ?? [];
 
   const outputs: Record<string, string> = {};
-  const builtins: Record<string, string> = {};
+  const builtins: Record<string, { id: string; url?: string }> = {};
 
   for (const { command } of slots) {
     const names = [command.name, ...(command.aliases ?? [])];
@@ -29,7 +29,7 @@ export function buildTerminalData(content: SiteContent): TerminalData {
         console.warn(`Command "${command.name}" is a builtin with no builtinId; skipping.`);
         continue;
       }
-      for (const n of names) builtins[n] = command.builtinId;
+      for (const n of names) builtins[n] = { id: command.builtinId, url: command.url };
     } else {
       const html = renderBody(command.body, groups);
       for (const n of names) outputs[n] = html;
@@ -49,8 +49,8 @@ export function buildTerminalData(content: SiteContent): TerminalData {
   outputs.help = `${intro}\n\n${rows}`;
 
   // Any alias of the help builtin should print the same thing.
-  for (const [name, id] of Object.entries(builtins)) {
-    if (id === 'help') outputs[name] = outputs.help;
+  for (const [name, b] of Object.entries(builtins)) {
+    if (b.id === 'help') outputs[name] = outputs.help;
   }
 
   return {

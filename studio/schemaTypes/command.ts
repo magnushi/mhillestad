@@ -42,6 +42,7 @@ export const command = defineType({
           { title: 'Snake (game)', value: 'snake' },
           { title: 'Clear the screen', value: 'clear' },
           { title: 'Help listing', value: 'help' },
+          { title: 'Open a link', value: 'open' },
         ],
       },
       hidden: ({ parent }) => parent?.kind !== 'builtin',
@@ -49,6 +50,19 @@ export const command = defineType({
         Rule.custom((value, context) => {
           const kind = (context.parent as { kind?: string } | undefined)?.kind;
           if (kind === 'builtin' && !value) return 'Pick which built-in this command runs.';
+          return true;
+        }),
+    }),
+    defineField({
+      name: 'url',
+      type: 'url',
+      title: 'URL to open',
+      description: 'Where the "Open a link" built-in sends the visitor.',
+      hidden: ({ parent }) => parent?.builtinId !== 'open',
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const parent = context.parent as { builtinId?: string } | undefined;
+          if (parent?.builtinId === 'open' && !value) return 'Give the URL to open.';
           return true;
         }),
     }),
