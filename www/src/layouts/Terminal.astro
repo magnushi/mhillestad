@@ -102,6 +102,20 @@ const { title, description } = Astro.props;
         padding: 0 0 0 0.5ch;
       }
 
+      .out.snake pre {
+        margin: 0.4rem 0 0.2rem;
+        line-height: 1.15;
+        color: var(--green);
+        /* The grid is drawn with characters, so it must not wrap or reflow. */
+        white-space: pre;
+        overflow-x: auto;
+      }
+
+      .snake-hud {
+        color: var(--dim);
+        font-size: 0.9em;
+      }
+
       table.inv {
         border-collapse: collapse;
         margin: 0.25rem 0 0.5rem 2ch;
