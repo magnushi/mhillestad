@@ -1,0 +1,22 @@
+{
+  "name": "mhillestad-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "schema:deploy": "sanity schemas deploy"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sanity": "^5.1.0",
+    "styled-components": "^6.1.15",
+    "@sanity/vision": "^5.1.0"
+  }
+}

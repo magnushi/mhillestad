@@ -1,0 +1,18 @@
+---
+// Makes it obvious the page is showing unpublished content, and gives a way out.
+---
+
+<div class="draft-banner">
+  draft preview — showing unpublished content ·
+  <a href="/api/draft-mode/disable">exit</a>
+</div>
+
+<style>
+  .draft-banner {
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px dashed var(--green);
+    color: var(--green);
+    font-size: 0.8rem;
+  }
+</style>

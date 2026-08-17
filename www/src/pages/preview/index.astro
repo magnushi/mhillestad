@@ -1,0 +1,35 @@
+---
+import Terminal from '../../layouts/Terminal.astro';
+import TerminalShell from '../../components/TerminalShell.astro';
+import DraftBanner from '../../components/DraftBanner.astro';
+import { getSiteContent } from '../../lib/sanity';
+import { buildOutputs } from '../../lib/outputs';
+import { isDraftMode, readToken } from '../../lib/preview';
+
+// Server-rendered: reads unpublished content with a token that must never
+// reach the browser.
+export const prerender = false;
+
+const token = readToken();
+if (!isDraftMode(Astro.request) || !token) {
+  // No validated cookie means no draft access. Send them to the real site
+  // rather than quietly rendering published content at a preview URL.
+  return Astro.redirect('/', 307);
+}
+
+const content = await getSiteContent({ perspective: 'drafts', token });
+const { settings, homepage } = content;
+const outputs = buildOutputs(content);
+---
+
+<Terminal
+  title={`Preview — ${settings?.siteTitle ?? 'Magnus Hillestad'}`}
+  description={homepage?.metaDescription ?? settings?.metaDescription}
+>
+  <DraftBanner />
+  <TerminalShell
+    outputs={outputs}
+    prompt={settings?.prompt ?? 'magnus@mhillestad.com:~$'}
+    bootCommand={homepage?.bootCommand ?? 'help'}
+  />
+</Terminal>

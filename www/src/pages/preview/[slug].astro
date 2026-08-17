@@ -1,0 +1,35 @@
+---
+import Terminal from '../../layouts/Terminal.astro';
+import DraftBanner from '../../components/DraftBanner.astro';
+import { getSiteContent } from '../../lib/sanity';
+import { renderBody } from '../../lib/render';
+import { isDraftMode, readToken } from '../../lib/preview';
+
+// Server-rendered so an unpublished page can be previewed before it has a
+// public route at all.
+export const prerender = false;
+
+const token = readToken();
+if (!isDraftMode(Astro.request) || !token) {
+  return Astro.redirect('/', 307);
+}
+
+const { slug } = Astro.params;
+const content = await getSiteContent({ perspective: 'drafts', token });
+const page = content.pages.find((p) => p.slug === slug);
+if (!page) {
+  return new Response('Not found', { status: 404 });
+}
+
+const prompt = content.settings?.prompt ?? 'magnus@mhillestad.com:~$';
+const html = renderBody(page.body, content.homepage?.investmentGroups ?? []);
+---
+
+<Terminal title={`Preview — ${page.title}`} description={page.metaDescription}>
+  <DraftBanner />
+  <div id="screen">
+    <div class="cmd-line"><span class="prompt">{prompt}</span> {`cat ${page.slug}`}</div>
+    <div class="out" set:html={html} />
+    <div class="cmd-line"><span class="prompt">{prompt}</span> <a href="/preview">cd ~</a></div>
+  </div>
+</Terminal>

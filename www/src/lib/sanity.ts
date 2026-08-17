@@ -8,9 +8,9 @@
 // reproducibly baked the previous version of a reorder. This is one query per
 // build, so paying ~300ms for a guaranteed-fresh read is the right trade.
 
-const PROJECT_ID = '301op25o';
-const DATASET = 'production';
-const API_VERSION = 'v2021-06-07';
+export const PROJECT_ID = '301op25o';
+export const DATASET = 'production';
+export const API_VERSION = 'v2021-06-07';
 
 export interface Span {
   _type: 'span';
@@ -112,12 +112,26 @@ const QUERY = `{
   }
 }`;
 
-export async function getSiteContent(): Promise<SiteContent> {
+/**
+ * Fetch site content.
+ *
+ * `drafts` switches to unpublished content and requires a token — drafts are
+ * not public even though this dataset is (verified: 0 drafts visible without
+ * one). Only the preview routes pass it, and only server-side.
+ */
+export async function getSiteContent(
+  opts: { perspective?: 'published' | 'drafts'; token?: string } = {},
+): Promise<SiteContent> {
+  const params = new URLSearchParams({ query: QUERY });
+  if (opts.perspective === 'drafts') params.set('perspective', 'drafts');
+
   const url =
     `https://${PROJECT_ID}.api.sanity.io/${API_VERSION}/data/query/${DATASET}` +
-    `?query=${encodeURIComponent(QUERY)}`;
+    `?${params.toString()}`;
 
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: opts.token ? { Authorization: `Bearer ${opts.token}` } : {},
+  });
   if (!res.ok) {
     throw new Error(`Sanity query failed (${res.status}). Cannot build without content.`);
   }

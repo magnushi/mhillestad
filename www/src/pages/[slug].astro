@@ -5,6 +5,8 @@ import { renderBody } from '../lib/render';
 
 // One static route per landing page in Sanity. Adding a page there and
 // republishing is all it takes for /that-slug to exist.
+export const prerender = true;
+
 export async function getStaticPaths() {
   const { settings, homepage, pages } = await getSiteContent();
   const groups = homepage?.investmentGroups ?? [];

@@ -1,101 +1,25 @@
 ---
 import Terminal from '../layouts/Terminal.astro';
+import TerminalShell from '../components/TerminalShell.astro';
 import { getSiteContent } from '../lib/sanity';
-import { renderBody } from '../lib/render';
+import { buildOutputs } from '../lib/outputs';
 
-const { settings, homepage, commands } = await getSiteContent();
+// Prerendered: visitors get a static file off the CDN. Only the preview routes
+// need a server.
+export const prerender = true;
 
-const prompt = settings?.prompt ?? 'magnus@mhillestad.com:~$';
-const bootCommand = homepage?.bootCommand ?? 'help';
-const groups = homepage?.investmentGroups ?? [];
-
-// Every command is runnable, whether or not the homepage lists it — so an
-// unlisted command still works if typed instead of silently not existing.
-const outputs: Record<string, string> = {};
-for (const c of commands) {
-  const html = renderBody(c.body, groups);
-  outputs[c.name] = html;
-  for (const alias of c.aliases ?? []) outputs[alias] = html;
-}
-
-// The help listing is the homepage's ordered command array, so its sequence is
-// whatever was dragged in the Studio.
-const helpRows = (homepage?.listedCommands ?? [])
-  .map(
-    (c) =>
-      `  <button class="cmd" data-cmd="${c.name}">${c.name}</button>\t${c.description ?? ''}`,
-  )
-  .join('\n');
-outputs.help = `available commands:\n\n${helpRows}\n  <button class="cmd" data-cmd="clear">clear</button>\tclear the screen`;
-outputs.ls = outputs.help;
+const content = await getSiteContent();
+const { settings, homepage } = content;
+const outputs = buildOutputs(content);
 ---
 
 <Terminal
   title={settings?.siteTitle ?? 'Magnus Hillestad'}
   description={homepage?.metaDescription ?? settings?.metaDescription}
 >
-  <div id="screen"></div>
-  <form id="input-line" autocomplete="off">
-    <span class="prompt" id="ps1">{prompt}</span>
-    <input id="stdin" type="text" aria-label="terminal input" autofocus />
-  </form>
+  <TerminalShell
+    outputs={outputs}
+    prompt={settings?.prompt ?? 'magnus@mhillestad.com:~$'}
+    bootCommand={homepage?.bootCommand ?? 'help'}
+  />
 </Terminal>
-
-<script
-  is:inline
-  define:vars={{ OUTPUTS: outputs, PS1: prompt, BOOT: bootCommand }}
->
-  const screen = document.getElementById('screen');
-  const stdin = document.getElementById('stdin');
-
-  function run(cmd) {
-    const line = document.createElement('div');
-    line.className = 'cmd-line';
-    const ps1 = document.createElement('span');
-    ps1.className = 'prompt';
-    ps1.textContent = PS1;
-    line.append(ps1, ' ' + cmd);
-    screen.appendChild(line);
-
-    if (cmd === 'clear') {
-      screen.innerHTML = '';
-    } else if (Object.prototype.hasOwnProperty.call(OUTPUTS, cmd)) {
-      const out = document.createElement('div');
-      out.className = 'out';
-      out.innerHTML = OUTPUTS[cmd];
-      screen.appendChild(out);
-    } else if (cmd) {
-      const out = document.createElement('div');
-      out.className = 'out';
-      out.textContent = `command not found: ${cmd} — try \`help\`\n`;
-      screen.appendChild(out);
-    }
-    stdin.focus();
-    window.scrollTo(0, document.body.scrollHeight);
-  }
-
-  // Delegated so build-time markup can stay inert strings.
-  screen.addEventListener('click', (e) => {
-    const btn = e.target.closest('button.cmd');
-    if (btn) run(btn.dataset.cmd);
-  });
-
-  document.getElementById('input-line').addEventListener('submit', (e) => {
-    e.preventDefault();
-    run(stdin.value.trim().toLowerCase());
-    stdin.value = '';
-  });
-
-  // keep focus on the terminal input (but never steal a text selection)
-  document.body.addEventListener('click', () => {
-    if (!window.getSelection()?.toString()) stdin.focus();
-  });
-
-  run(BOOT);
-
-  // A landing page can hand a command back to the terminal via ?run=…
-  const requested = new URLSearchParams(location.search).get('run');
-  if (requested && Object.prototype.hasOwnProperty.call(OUTPUTS, requested)) {
-    run(requested);
-  }
-</script>
