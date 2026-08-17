@@ -1,0 +1,39 @@
+---
+import Terminal from '../layouts/Terminal.astro';
+import { getSiteContent } from '../lib/sanity';
+import { renderBody } from '../lib/render';
+
+// One static route per landing page in Sanity. Adding a page there and
+// republishing is all it takes for /that-slug to exist.
+export async function getStaticPaths() {
+  const { settings, pages, investments } = await getSiteContent();
+  return pages.map((page) => ({
+    params: { slug: page.slug },
+    props: { page, investments, settings },
+  }));
+}
+
+const { page, investments, settings } = Astro.props;
+const prompt = settings?.prompt ?? 'magnus@mhillestad.com:~$';
+const html = renderBody(page.body, investments);
+---
+
+<Terminal
+  title={`${page.title} — ${settings?.siteTitle ?? 'Magnus Hillestad'}`}
+  description={page.metaDescription}
+>
+  <div id="screen">
+    <div class="cmd-line"><span class="prompt">{prompt}</span> {`cat ${page.slug}`}</div>
+    <div class="out" set:html={html} />
+    <div class="cmd-line"><span class="prompt">{prompt}</span> <a href="/">cd ~</a></div>
+  </div>
+</Terminal>
+
+<script is:inline>
+  // Command buttons inside page bodies send the visitor to the terminal and
+  // run there, since there is no shell on a landing page.
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button.cmd');
+    if (btn) window.location.href = `/?run=${encodeURIComponent(btn.dataset.cmd)}`;
+  });
+</script>

@@ -1,0 +1,121 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <style is:global>
+      :root {
+        --bg: #0d1117;
+        --fg: #c9d1d9;
+        --dim: #8b949e;
+        --green: #3fb950;
+        --link: #58a6ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 1.5rem 1rem 4rem;
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+
+      .prompt {
+        color: var(--green);
+      }
+
+      .cmd-line {
+        margin-top: 1rem;
+      }
+
+      .out {
+        white-space: pre-wrap;
+        color: var(--fg);
+      }
+
+      .out .dim {
+        color: var(--dim);
+      }
+
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      button.cmd {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        color: var(--link);
+        cursor: pointer;
+      }
+
+      button.cmd:hover {
+        text-decoration: underline;
+      }
+
+      #input-line {
+        display: flex;
+        margin-top: 1rem;
+        align-items: baseline;
+      }
+
+      #stdin {
+        flex: 1;
+        background: none;
+        border: none;
+        outline: none;
+        font: inherit;
+        color: var(--fg);
+        caret-color: var(--green);
+        padding: 0 0 0 0.5ch;
+      }
+
+      table.inv {
+        border-collapse: collapse;
+        margin: 0.25rem 0 0.5rem 2ch;
+      }
+
+      table.inv td {
+        padding: 0 2.5ch 0 0;
+        vertical-align: baseline;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>

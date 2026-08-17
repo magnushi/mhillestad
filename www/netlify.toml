@@ -1,5 +1,6 @@
-# Static site, no build step. In Netlify, set this site's base directory
-# to "www" so this file applies.
+# Base directory for this site is "www". Content comes from Sanity at build
+# time, so a content change needs a rebuild — see the build hook wired to the
+# Sanity webhook.
 [build]
-  command = ""
-  publish = "."
+  command = "npm run build"
+  publish = "dist"
