@@ -3,23 +3,24 @@ import Terminal from '../layouts/Terminal.astro';
 import { getSiteContent } from '../lib/sanity';
 import { renderBody } from '../lib/render';
 
-const { settings, commands, investments } = await getSiteContent();
+const { settings, homepage, commands } = await getSiteContent();
 
 const prompt = settings?.prompt ?? 'magnus@mhillestad.com:~$';
-const bootCommand = settings?.bootCommand ?? 'help';
+const bootCommand = homepage?.bootCommand ?? 'help';
+const groups = homepage?.investmentGroups ?? [];
 
-// Every command's output is rendered here, at build time, and shipped as a
-// lookup table. `help` is generated from the command list rather than authored,
-// so adding a command in Sanity puts it in the listing automatically.
+// Every command is runnable, whether or not the homepage lists it — so an
+// unlisted command still works if typed instead of silently not existing.
 const outputs: Record<string, string> = {};
 for (const c of commands) {
-  const html = renderBody(c.body, investments);
+  const html = renderBody(c.body, groups);
   outputs[c.name] = html;
   for (const alias of c.aliases ?? []) outputs[alias] = html;
 }
 
-const helpRows = commands
-  .filter((c) => !c.hideFromHelp)
+// The help listing is the homepage's ordered command array, so its sequence is
+// whatever was dragged in the Studio.
+const helpRows = (homepage?.listedCommands ?? [])
   .map(
     (c) =>
       `  <button class="cmd" data-cmd="${c.name}">${c.name}</button>\t${c.description ?? ''}`,
@@ -29,7 +30,10 @@ outputs.help = `available commands:\n\n${helpRows}\n  <button class="cmd" data-c
 outputs.ls = outputs.help;
 ---
 
-<Terminal title={settings?.siteTitle ?? 'Magnus Hillestad'} description={settings?.metaDescription}>
+<Terminal
+  title={settings?.siteTitle ?? 'Magnus Hillestad'}
+  description={homepage?.metaDescription ?? settings?.metaDescription}
+>
   <div id="screen"></div>
   <form id="input-line" autocomplete="off">
     <span class="prompt" id="ps1">{prompt}</span>

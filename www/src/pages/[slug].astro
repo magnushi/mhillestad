@@ -6,16 +6,17 @@ import { renderBody } from '../lib/render';
 // One static route per landing page in Sanity. Adding a page there and
 // republishing is all it takes for /that-slug to exist.
 export async function getStaticPaths() {
-  const { settings, pages, investments } = await getSiteContent();
+  const { settings, homepage, pages } = await getSiteContent();
+  const groups = homepage?.investmentGroups ?? [];
   return pages.map((page) => ({
     params: { slug: page.slug },
-    props: { page, investments, settings },
+    props: { page, groups, settings },
   }));
 }
 
-const { page, investments, settings } = Astro.props;
+const { page, groups, settings } = Astro.props;
 const prompt = settings?.prompt ?? 'magnus@mhillestad.com:~$';
-const html = renderBody(page.body, investments);
+const html = renderBody(page.body, groups);
 ---
 
 <Terminal
