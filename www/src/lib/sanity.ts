@@ -46,7 +46,16 @@ export interface Command {
   name: string;
   aliases?: string[];
   description?: string;
+  /** `builtin` commands run code in the site; `content` commands print `body`. */
+  kind?: 'content' | 'builtin';
+  builtinId?: string;
   body?: BodyBlock[];
+}
+
+/** A command as the homepage places it: in order, and advertised or hidden. */
+export interface CommandSlot {
+  listed: boolean;
+  command: Command;
 }
 
 export interface Investment {
@@ -72,22 +81,26 @@ export interface SiteSettings {
   siteTitle: string;
   metaDescription?: string;
   prompt: string;
+  helpIntro?: string;
+  notFoundMessage?: string;
+  backLinkLabel?: string;
 }
 
-/** The homepage document: what is listed, in what order, and how grouped. */
+/** The homepage document: the command registry, plus investment grouping. */
 export interface Homepage {
   metaDescription?: string;
   bootCommand?: string;
-  /** In help-listing order, as dragged in the Studio. */
-  listedCommands: Command[];
+  /**
+   * Every command the site has, in help order, each flagged listed or hidden.
+   * This array is the whole command surface — nothing outside it exists.
+   */
+  commands: CommandSlot[];
   investmentGroups: InvestmentGroup[];
 }
 
 export interface SiteContent {
   settings: SiteSettings | null;
   homepage: Homepage | null;
-  /** Every command, listed or not, so typing an unlisted one still works. */
-  commands: Command[];
   pages: LandingPage[];
 }
 
@@ -95,18 +108,22 @@ export interface SiteContent {
 // resolve those references in place rather than sorting by a field. Sanity
 // preserves array order, which is exactly the order dragged in the Studio.
 const QUERY = `{
-  "settings": *[_type == "siteSettings"][0]{siteTitle, metaDescription, prompt},
+  "settings": *[_type == "siteSettings"][0]{
+    siteTitle, metaDescription, prompt, helpIntro, notFoundMessage, backLinkLabel
+  },
   "homepage": *[_type == "homepage"][0]{
     metaDescription,
-    bootCommand,
-    "listedCommands": commands[]->{name, aliases, description, body},
+    "bootCommand": bootCommand->name,
+    "commands": commands[]{
+      "listed": coalesce(listed, true),
+      "command": command->{name, aliases, description, kind, builtinId, body}
+    },
     "investmentGroups": investmentGroups[]{
       key,
       heading,
       "investments": investments[]->{name, url}
     }
   },
-  "commands": *[_type == "command"] | order(name asc){name, aliases, description, body},
   "pages": *[_type == "landingPage" && defined(slug.current)]{
     title, "slug": slug.current, metaDescription, body
   }
@@ -139,14 +156,15 @@ export async function getSiteContent(
   const homepage = result?.homepage
     ? {
         ...result.homepage,
-        listedCommands: (result.homepage.listedCommands ?? []).filter(Boolean),
+        // A slot whose reference was deleted resolves to null; drop those
+        // rather than crashing the build on someone else's tidy-up.
+        commands: (result.homepage.commands ?? []).filter((s) => s?.command?.name),
         investmentGroups: (result.homepage.investmentGroups ?? []).filter(Boolean),
       }
     : null;
   return {
     settings: result?.settings ?? null,
     homepage,
-    commands: result?.commands ?? [],
     pages: result?.pages ?? [],
   };
 }

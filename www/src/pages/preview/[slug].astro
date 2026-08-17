@@ -22,6 +22,7 @@ if (!page) {
 }
 
 const prompt = content.settings?.prompt ?? 'magnus@mhillestad.com:~$';
+const backLabel = content.settings?.backLinkLabel ?? 'cd ~';
 const html = renderBody(page.body, content.homepage?.investmentGroups ?? []);
 ---
 
@@ -30,6 +31,6 @@ const html = renderBody(page.body, content.homepage?.investmentGroups ?? []);
   <div id="screen">
     <div class="cmd-line"><span class="prompt">{prompt}</span> {`cat ${page.slug}`}</div>
     <div class="out" set:html={html} />
-    <div class="cmd-line"><span class="prompt">{prompt}</span> <a href="/preview">cd ~</a></div>
+    <div class="cmd-line"><span class="prompt">{prompt}</span> <a href="/preview">{backLabel}</a></div>
   </div>
 </Terminal>

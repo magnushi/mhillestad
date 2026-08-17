@@ -5,7 +5,7 @@ export const homepage = defineType({
   type: 'document',
   title: 'Home page',
   description:
-    'Steers the terminal home page: which commands are listed, in what order, and how investments are grouped.',
+    'Steers the terminal: which commands exist, which are advertised, in what order, and how investments are grouped.',
   fields: [
     defineField({
       name: 'metaDescription',
@@ -15,17 +15,18 @@ export const homepage = defineType({
     }),
     defineField({
       name: 'bootCommand',
-      type: 'string',
+      type: 'reference',
       title: 'Command run on load',
-      description: 'Runs automatically when the page opens. "help" and "clear" are built in.',
+      description: 'Runs automatically when the page opens. Usually "help".',
+      to: [{ type: 'command' }],
     }),
     defineField({
       name: 'commands',
       type: 'array',
-      title: 'Help listing',
+      title: 'Commands',
       description:
-        'Drag to set the order commands appear in "help". A command left out of this list still runs if typed — it is just not advertised.',
-      of: [defineArrayMember({ type: 'reference', to: [{ type: 'command' }] })],
+        'Every command the site has. Drag to set the order they appear in "help"; switch "Show in help" off to make one hidden but still typeable. A command missing from this list does not exist on the site.',
+      of: [defineArrayMember({ type: 'commandSlot' })],
     }),
     defineField({
       name: 'investmentGroups',

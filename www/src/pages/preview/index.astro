@@ -3,7 +3,7 @@ import Terminal from '../../layouts/Terminal.astro';
 import TerminalShell from '../../components/TerminalShell.astro';
 import DraftBanner from '../../components/DraftBanner.astro';
 import { getSiteContent } from '../../lib/sanity';
-import { buildOutputs } from '../../lib/outputs';
+import { buildTerminalData } from '../../lib/outputs';
 import { isDraftMode, readToken } from '../../lib/preview';
 
 // Server-rendered: reads unpublished content with a token that must never
@@ -19,7 +19,7 @@ if (!isDraftMode(Astro.request) || !token) {
 
 const content = await getSiteContent({ perspective: 'drafts', token });
 const { settings, homepage } = content;
-const outputs = buildOutputs(content);
+const { outputs, builtins, notFoundMessage } = buildTerminalData(content);
 ---
 
 <Terminal
@@ -29,6 +29,8 @@ const outputs = buildOutputs(content);
   <DraftBanner />
   <TerminalShell
     outputs={outputs}
+    builtins={builtins}
+    notFoundMessage={notFoundMessage}
     prompt={settings?.prompt ?? 'magnus@mhillestad.com:~$'}
     bootCommand={homepage?.bootCommand ?? 'help'}
   />

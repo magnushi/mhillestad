@@ -4,6 +4,7 @@
 // can only be managed by one source, and two records drift apart silently.
 
 import { command } from './command';
+import { commandSlot } from './commandSlot';
 import { homepage } from './homepage';
 import { investment } from './investment';
 import { investmentGroup } from './investmentGroup';
@@ -23,6 +24,7 @@ export const schemaTypes = [
   siteSettings,
   source,
   // objects
+  commandSlot,
   investmentGroup,
   investmentTable,
   terminalLink,

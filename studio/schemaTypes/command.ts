@@ -6,7 +6,7 @@ export const command = defineType({
   type: 'document',
   title: 'CLI command',
   description:
-    'A command the visitor can type. Its position in the help listing is set on the Home page.',
+    'A command the visitor can type. Whether it is advertised in "help" — and in what order — is set on the Home page.',
   fields: [
     defineField({
       name: 'name',
@@ -14,6 +14,43 @@ export const command = defineType({
       title: 'Command',
       description: 'What the visitor types, lowercase. e.g. "about".',
       validation: (Rule) => Rule.required().lowercase(),
+    }),
+    defineField({
+      name: 'kind',
+      type: 'string',
+      title: 'Kind',
+      description:
+        'Text prints the output below. Built-in runs code in the site — used for things a document cannot express, like a game.',
+      options: {
+        list: [
+          { title: 'Text output', value: 'content' },
+          { title: 'Built-in (runs code)', value: 'builtin' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'content',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'builtinId',
+      type: 'string',
+      title: 'Which built-in',
+      description:
+        'Ties this command to code in the site. Adding a new value here does nothing until the site implements it.',
+      options: {
+        list: [
+          { title: 'Snake (game)', value: 'snake' },
+          { title: 'Clear the screen', value: 'clear' },
+          { title: 'Help listing', value: 'help' },
+        ],
+      },
+      hidden: ({ parent }) => parent?.kind !== 'builtin',
+      validation: (Rule) =>
+        Rule.custom((value, context) => {
+          const kind = (context.parent as { kind?: string } | undefined)?.kind;
+          if (kind === 'builtin' && !value) return 'Pick which built-in this command runs.';
+          return true;
+        }),
     }),
     defineField({
       name: 'aliases',
@@ -34,9 +71,14 @@ export const command = defineType({
       title: 'Output',
       description: 'What gets printed when the command runs.',
       of: terminalBody,
+      hidden: ({ parent }) => parent?.kind === 'builtin',
     }),
   ],
   preview: {
-    select: { title: 'name', subtitle: 'description' },
+    select: { title: 'name', subtitle: 'description', kind: 'kind' },
+    prepare: ({ title, subtitle, kind }) => ({
+      title,
+      subtitle: kind === 'builtin' ? `built-in · ${subtitle ?? ''}` : subtitle,
+    }),
   },
 });

@@ -3,10 +3,12 @@
 // preview, so both behave identically.
 interface Props {
   outputs: Record<string, string>;
+  builtins: Record<string, string>;
+  notFoundMessage: string;
   prompt: string;
   bootCommand: string;
 }
-const { outputs, prompt, bootCommand } = Astro.props;
+const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
 ---
 
 <div id="screen"></div>
@@ -15,14 +17,20 @@ const { outputs, prompt, bootCommand } = Astro.props;
   <input id="stdin" type="text" aria-label="terminal input" autofocus />
 </form>
 
-<script is:inline define:vars={{ OUTPUTS: outputs, PS1: prompt, BOOT: bootCommand }}>
+<script is:inline define:vars={{
+    OUTPUTS: outputs,
+    BUILTINS: builtins,
+    NOT_FOUND: notFoundMessage,
+    PS1: prompt,
+    BOOT: bootCommand,
+  }}>
   const screen = document.getElementById('screen');
   const stdin = document.getElementById('stdin');
 
   // Snake, played on a character grid so it looks like it belongs in a
-  // terminal. A built-in rather than content, since it needs a game loop —
-  // unlike hidden text commands, which are just documents left out of the
-  // homepage's help listing.
+  // terminal. Registered in Sanity as a builtin command, because a game needs a
+  // loop rather than block content — but its name and visibility are content
+  // like any other command's.
   let snakeActive = false;
 
   function startSnake() {
@@ -140,9 +148,14 @@ const { outputs, prompt, bootCommand } = Astro.props;
     line.append(ps1, ' ' + cmd);
     screen.appendChild(line);
 
-    if (cmd === 'clear') {
+    // Which commands exist, and whether each is code or text, comes from the
+    // homepage registry — so a builtin can be renamed or hidden in the Studio
+    // without touching this file.
+    const builtin = Object.prototype.hasOwnProperty.call(BUILTINS, cmd) ? BUILTINS[cmd] : null;
+
+    if (builtin === 'clear') {
       screen.innerHTML = '';
-    } else if (cmd === 'snake') {
+    } else if (builtin === 'snake') {
       startSnake();
       window.scrollTo(0, document.body.scrollHeight);
       return;
@@ -154,7 +167,7 @@ const { outputs, prompt, bootCommand } = Astro.props;
     } else if (cmd) {
       const out = document.createElement('div');
       out.className = 'out';
-      out.textContent = `command not found: ${cmd} — try \`help\`\n`;
+      out.textContent = NOT_FOUND.replace('{cmd}', cmd) + '\n';
       screen.appendChild(out);
     }
     stdin.focus();
@@ -184,7 +197,10 @@ const { outputs, prompt, bootCommand } = Astro.props;
 
   // A landing page can hand a command back to the terminal via ?run=…
   const requested = new URLSearchParams(location.search).get('run');
-  if (requested && Object.prototype.hasOwnProperty.call(OUTPUTS, requested)) {
+  const known = (c) =>
+    Object.prototype.hasOwnProperty.call(OUTPUTS, c) ||
+    Object.prototype.hasOwnProperty.call(BUILTINS, c);
+  if (requested && known(requested)) {
     run(requested);
   }
 </script>

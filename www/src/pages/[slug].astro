@@ -18,6 +18,7 @@ export async function getStaticPaths() {
 
 const { page, groups, settings } = Astro.props;
 const prompt = settings?.prompt ?? 'magnus@mhillestad.com:~$';
+const backLabel = settings?.backLinkLabel ?? 'cd ~';
 const html = renderBody(page.body, groups);
 ---
 
@@ -28,7 +29,7 @@ const html = renderBody(page.body, groups);
   <div id="screen">
     <div class="cmd-line"><span class="prompt">{prompt}</span> {`cat ${page.slug}`}</div>
     <div class="out" set:html={html} />
-    <div class="cmd-line"><span class="prompt">{prompt}</span> <a href="/">cd ~</a></div>
+    <div class="cmd-line"><span class="prompt">{prompt}</span> <a href="/">{backLabel}</a></div>
   </div>
 </Terminal>
 
