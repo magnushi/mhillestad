@@ -116,6 +116,9 @@
 
     <script>
       const PS1 = 'magnus@mhillestad.com:~$';
+
+      const LINKEDIN_URL = 'https://www.linkedin.com/in/magnushillestad/';
+      const TWITTER_URL = 'https://x.com/mhillestad';
       const screen = document.getElementById('screen');
       const stdin = document.getElementById('stdin');
 
@@ -194,15 +197,14 @@
         about() {
           const out = el('div', 'out');
           out.append('Magnus Hillestad.\n');
-          out.append('Day job: ');
+          out.append('Day job: CEO and Co-founder of ');
           out.append(link('sanity.io', 'https://www.sanity.io'));
-          out.append('\nSide project: ');
-          out.append(
-            link('/IndustrialRevolutions', '/IndustrialRevolutions'),
-          );
-          out.append(
-            ' — chat with an AI expert about the industrial\nrevolutions and the AI revolution.\n',
-          );
+          out.append('\nBased in San Francisco Bay Area, US\n');
+          out.append('LinkedIn: ');
+          out.append(link('bio', LINKEDIN_URL));
+          out.append('\nTwitter: ');
+          out.append(link('bio', TWITTER_URL));
+          out.append('\n');
           out.append('Investor — see ');
           const b = el('button', 'cmd', 'investments');
           b.addEventListener('click', () => run('investments'));
