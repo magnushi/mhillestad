@@ -2,7 +2,7 @@
 // the live page and the draft preview so the two can never render differently.
 
 import { renderBody } from './render';
-import type { BodyBlock, EntryKind, SiteContent } from './sanity';
+import type { BodyBlock, BookCategory, EntryKind, SiteContent } from './sanity';
 
 export interface TerminalData {
   /** Command (and alias) name -> rendered HTML, for text commands. */
@@ -36,9 +36,21 @@ const KIND_FLAGS: Record<string, EntryKind> = {
   '-interviews': 'press',
 };
 
+// The same idea for the reading list: `books -fiction`.
+const CATEGORY_FLAGS: Record<string, BookCategory> = {
+  '-fiction': 'fiction',
+  '-nonfiction': 'nonfiction',
+  '-non-fiction': 'nonfiction',
+};
+
 /** Force every blog listing in a body to one kind, for a `-flag` variant. */
 function bodyForKind(body: BodyBlock[], kind: EntryKind): BodyBlock[] {
   return body.map((block) => (block._type === 'entryList' ? { ...block, kind } : block));
+}
+
+/** Force every reading list in a body to one category. */
+function bodyForCategory(body: BodyBlock[], category: BookCategory): BodyBlock[] {
+  return body.map((block) => (block._type === 'bookList' ? { ...block, category } : block));
 }
 
 export function buildTerminalData(content: SiteContent): TerminalData {
@@ -68,6 +80,14 @@ export function buildTerminalData(content: SiteContent): TerminalData {
       if (body.some((block) => block._type === 'entryList')) {
         for (const [flag, kind] of Object.entries(KIND_FLAGS)) {
           const filtered = renderBody(bodyForKind(body, kind), groups, entries, books);
+          for (const n of names) outputs[`${n} ${flag}`] = filtered;
+        }
+      }
+
+      // `books -fiction` and friends, likewise.
+      if (body.some((block) => block._type === 'bookList')) {
+        for (const [flag, category] of Object.entries(CATEGORY_FLAGS)) {
+          const filtered = renderBody(bodyForCategory(body, category), groups, entries, books);
           for (const n of names) outputs[`${n} ${flag}`] = filtered;
         }
       }

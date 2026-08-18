@@ -2,11 +2,16 @@ import { defineField, defineType } from 'sanity';
 
 // A book on the reading list, printed by the `books` command. Like entries,
 // these are not dragged into order — the listing sorts them by author.
+//
+// The list is a superset of what the site shows: a book is kept here whether or
+// not it is published to the terminal, and `showOnSite` is the switch. It
+// defaults to off, so adding a book is never the same act as publishing it.
 export const book = defineType({
   name: 'book',
   type: 'document',
   title: 'Book',
-  description: 'A book on the reading list. Listed by author, so there is nothing to drag.',
+  description:
+    'A book on the reading list. Listed by author, so there is nothing to drag. It only appears on the site once "Show on the site" is switched on.',
   fields: [
     defineField({
       name: 'title',
@@ -18,6 +23,28 @@ export const book = defineType({
       name: 'author',
       type: 'string',
       title: 'Author',
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: 'showOnSite',
+      type: 'boolean',
+      title: 'Show on the site',
+      description:
+        'Off by default. While this is off the book stays in the list here but prints nowhere on the site.',
+      initialValue: false,
+    }),
+    defineField({
+      name: 'category',
+      type: 'string',
+      title: 'Category',
+      options: {
+        list: [
+          { title: 'Non-fiction', value: 'nonfiction' },
+          { title: 'Fiction', value: 'fiction' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'nonfiction',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -51,10 +78,19 @@ export const book = defineType({
     },
   ],
   preview: {
-    select: { title: 'title', author: 'author', year: 'year' },
-    prepare: ({ title, author, year }) => ({
-      title,
-      subtitle: [author, year].filter(Boolean).join(' · '),
+    select: {
+      title: 'title',
+      author: 'author',
+      year: 'year',
+      category: 'category',
+      showOnSite: 'showOnSite',
+    },
+    prepare: ({ title, author, year, category, showOnSite }) => ({
+      // Lead with the hidden state: it is the thing you scan the list for.
+      title: showOnSite ? title : `· ${title}`,
+      subtitle: [showOnSite ? null : 'hidden', author, year, category]
+        .filter(Boolean)
+        .join(' · '),
     }),
   },
 });

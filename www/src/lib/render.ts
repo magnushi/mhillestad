@@ -89,23 +89,30 @@ function renderEntryList(block: EntryList, entries: Entry[]): string {
 }
 
 function renderBookList(block: BookList, books: Book[]): string {
-  // `books` arrives sorted by author from the query.
+  // `books` arrives sorted by author, already filtered to the ones switched on
+  // for the site — so this only narrows by category.
   const rows = books
+    .filter((b) => !block.category || b.category === block.category)
     .map((b) => {
       const title = escapeHtml(b.title);
       const linked = b.url
         ? `<a href="${escapeHtml(b.url)}" target="_blank" rel="noopener">${title}</a>`
         : title;
       const by = [b.author, b.year].filter(Boolean).join(', ');
+      // "non-fiction" reads better than the stored "nonfiction".
+      const cat = b.category === 'nonfiction' ? 'non-fiction' : (b.category ?? '');
       const note =
         block.showNotes && b.note
-          ? `<tr><td></td><td class="dim note">${escapeHtml(b.note)}</td></tr>`
+          ? `<tr><td></td><td class="dim note" colspan="2">${escapeHtml(b.note)}</td></tr>`
           : '';
-      return `<tr><td>${linked}</td><td class="dim">${escapeHtml(by)}</td></tr>${note}`;
+      return (
+        `<tr><td>${linked}</td><td class="dim">${escapeHtml(by)}</td>` +
+        `<td class="dim">${escapeHtml(cat)}</td></tr>${note}`
+      );
     })
     .join('');
   if (!rows) {
-    console.warn('Reading list has no books; skipping.');
+    console.warn(`Reading list matched no books (category: ${block.category ?? 'any'}).`);
     return '';
   }
   return `<table class="inv books">${rows}</table>`;

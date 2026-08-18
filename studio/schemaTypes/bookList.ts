@@ -1,15 +1,25 @@
 import { defineType } from 'sanity';
 
-// Prints the whole reading list. Takes no options: there is one list, and every
-// book is on it. Drop this into the `books` command.
+// Prints the reading list — only the books switched on for the site. Drop this
+// into the `books` command.
 export const bookList = defineType({
   name: 'bookList',
   type: 'object',
   title: 'Reading list',
-  description: 'Prints every book, by author.',
+  description: 'Prints every book marked "Show on the site", by author.',
   fields: [
-    // Sanity requires at least one field on an object type. This one is here so
-    // the block is configurable at all; leaving it off prints just the books.
+    {
+      name: 'category',
+      type: 'string',
+      title: 'Limit to one category',
+      description: 'Leave empty to list fiction and non-fiction together.',
+      options: {
+        list: [
+          { title: 'Non-fiction only', value: 'nonfiction' },
+          { title: 'Fiction only', value: 'fiction' },
+        ],
+      },
+    },
     {
       name: 'showNotes',
       type: 'boolean',
@@ -19,10 +29,12 @@ export const bookList = defineType({
     },
   ],
   preview: {
-    select: { showNotes: 'showNotes' },
-    prepare: ({ showNotes }) => ({
+    select: { category: 'category', showNotes: 'showNotes' },
+    prepare: ({ category, showNotes }) => ({
       title: 'Reading list',
-      subtitle: showNotes ? 'with notes' : 'titles only',
+      subtitle: [category ? `${category} only` : 'everything', showNotes ? 'with notes' : null]
+        .filter(Boolean)
+        .join(' · '),
     }),
   },
 });

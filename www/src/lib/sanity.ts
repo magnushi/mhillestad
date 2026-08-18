@@ -51,6 +51,8 @@ export interface EntryList {
 export interface BookList {
   _type: 'bookList';
   _key?: string;
+  /** Optional filter; when absent, fiction and non-fiction are listed together. */
+  category?: BookCategory;
   showNotes?: boolean;
 }
 
@@ -71,10 +73,18 @@ export interface Entry {
   path?: string;
 }
 
-/** A book on the reading list, printed by the `books` command. */
+export type BookCategory = 'fiction' | 'nonfiction';
+
+/**
+ * A book on the reading list, printed by the `books` command.
+ *
+ * Only books with `showOnSite` are fetched, so the field is not carried here —
+ * everything the site holds is by definition meant to be shown.
+ */
 export interface Book {
   title: string;
   author: string;
+  category?: BookCategory;
   year?: number;
   url?: string;
   note?: string;
@@ -187,9 +197,9 @@ const QUERY = `{
   "posts": *[_type == "blogPost" && defined(date) && defined(slug.current)] | order(date desc){
     title, "slug": slug.current, date, metaDescription, body
   },
-  "books": *[_type == "book" && defined(title) && defined(author)]
+  "books": *[_type == "book" && showOnSite == true && defined(title) && defined(author)]
     | order(author asc, title asc){
-      title, author, year, url, note
+      title, author, category, year, url, note
     }
 }`;
 
