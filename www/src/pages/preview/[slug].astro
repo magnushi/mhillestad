@@ -23,7 +23,7 @@ if (!page) {
 
 const prompt = content.settings?.prompt ?? 'magnus@mhillestad.com:~$';
 const backLabel = content.settings?.backLinkLabel ?? 'cd ~';
-const html = renderBody(page.body, content.homepage?.investmentGroups ?? []);
+const html = renderBody(page.body, content.homepage?.investmentGroups ?? [], content.entries, content.books);
 ---
 
 <Terminal title={`Preview — ${page.title}`} description={page.metaDescription}>

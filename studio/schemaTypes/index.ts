@@ -3,8 +3,13 @@
 // any agent read. Do not register schema through other channels — a workspace
 // can only be managed by one source, and two records drift apart silently.
 
+import { blogPost } from './blogPost';
+import { book } from './book';
+import { bookList } from './bookList';
 import { command } from './command';
 import { commandSlot } from './commandSlot';
+import { entry } from './entry';
+import { entryList } from './entryList';
 import { homepage } from './homepage';
 import { investment } from './investment';
 import { investmentGroup } from './investmentGroup';
@@ -20,11 +25,16 @@ export const schemaTypes = [
   homepage,
   landingPage,
   command,
+  blogPost,
+  entry,
+  book,
   investment,
   siteSettings,
   source,
   // objects
   commandSlot,
+  entryList,
+  bookList,
   investmentGroup,
   investmentTable,
   terminalLink,

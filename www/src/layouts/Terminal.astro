@@ -125,6 +125,21 @@ const { title, description } = Astro.props;
         padding: 0 2.5ch 0 0;
         vertical-align: baseline;
       }
+
+      /* The blog listing is the same table with a date and a kind in front.
+         Dates are fixed-width so the titles line up down the column. */
+      table.entries td:first-child {
+        white-space: nowrap;
+      }
+
+      table.entries td:nth-child(2) {
+        padding-right: 2ch;
+      }
+
+      /* Notes sit under their book, indented into the author column. */
+      table.books td.note {
+        padding-bottom: 0.35rem;
+      }
     </style>
   </head>
   <body>

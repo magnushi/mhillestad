@@ -10,6 +10,7 @@ const SITE_URL = process.env.SANITY_STUDIO_PREVIEW_URL || 'https://www.mhillesta
 // opens the right document and vice versa.
 const mainDocuments = defineDocuments([
   { route: '/', type: 'homepage' },
+  { route: '/blog/:slug', filter: '_type == "blogPost" && slug.current == $slug' },
   { route: '/:slug', filter: '_type == "landingPage" && slug.current == $slug' },
 ]);
 
@@ -27,6 +28,20 @@ const locations = {
     resolve: (doc) => ({
       locations: [{ title: `Terminal — ${doc?.name ?? 'command'}`, href: '/' }],
     }),
+  }),
+  blogPost: defineLocations({
+    select: { title: 'title', slug: 'slug.current' },
+    resolve: (doc) => ({
+      locations: [{ title: doc?.title || 'Untitled', href: `/blog/${doc?.slug}` }],
+    }),
+  }),
+  book: defineLocations({
+    message: 'Appears in the `books` reading list in the terminal.',
+    tone: 'caution',
+  }),
+  entry: defineLocations({
+    message: 'Appears in the `blog` listing in the terminal, ordered by date.',
+    tone: 'caution',
   }),
   investment: defineLocations({
     message: 'Appears in whichever investment group lists it, on the Home page.',
@@ -73,6 +88,39 @@ export default defineConfig({
             S.documentTypeListItem('landingPage').title('Landing pages'),
             S.divider(),
             S.documentTypeListItem('command').title('CLI commands'),
+            S.listItem()
+              .title('Blog posts')
+              .id('blogPosts')
+              .child(
+                S.documentList()
+                  .title('Blog posts')
+                  .filter('_type == "blogPost"')
+                  .defaultOrdering([{ field: 'date', direction: 'desc' }])
+                  .apiVersion('2021-06-07'),
+              ),
+            S.listItem()
+              .title('Blog entries (elsewhere)')
+              .id('entries')
+              .child(
+                S.documentList()
+                  .title('Blog entries')
+                  .filter('_type == "entry"')
+                  .defaultOrdering([{ field: 'date', direction: 'desc' }])
+                  .apiVersion('2021-06-07'),
+              ),
+            S.listItem()
+              .title('Books')
+              .id('books')
+              .child(
+                S.documentList()
+                  .title('Books')
+                  .filter('_type == "book"')
+                  .defaultOrdering([
+                    { field: 'author', direction: 'asc' },
+                    { field: 'title', direction: 'asc' },
+                  ])
+                  .apiVersion('2021-06-07'),
+              ),
             S.documentTypeListItem('investment').title('Investments'),
             S.divider(),
             S.documentTypeListItem('source').title('Sources'),
@@ -88,9 +136,17 @@ export default defineConfig({
               ),
             ...S.documentTypeListItems().filter(
               (item) =>
-                !['homepage', 'landingPage', 'command', 'investment', 'source', 'siteSettings'].includes(
-                  item.getId() ?? '',
-                ),
+                ![
+                  'homepage',
+                  'landingPage',
+                  'command',
+                  'blogPost',
+                  'entry',
+                  'book',
+                  'investment',
+                  'source',
+                  'siteSettings',
+                ].includes(item.getId() ?? ''),
             ),
           ]),
     }),

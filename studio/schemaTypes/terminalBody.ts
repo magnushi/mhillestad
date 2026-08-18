@@ -13,4 +13,6 @@ export const terminalBody = [
     },
   }),
   defineArrayMember({ type: 'investmentTable' }),
+  defineArrayMember({ type: 'entryList' }),
+  defineArrayMember({ type: 'bookList' }),
 ];

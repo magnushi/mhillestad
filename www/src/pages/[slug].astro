@@ -8,18 +8,18 @@ import { renderBody } from '../lib/render';
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const { settings, homepage, pages } = await getSiteContent();
+  const { settings, homepage, pages, entries, books } = await getSiteContent();
   const groups = homepage?.investmentGroups ?? [];
   return pages.map((page) => ({
     params: { slug: page.slug },
-    props: { page, groups, settings },
+    props: { page, groups, settings, entries, books },
   }));
 }
 
-const { page, groups, settings } = Astro.props;
+const { page, groups, settings, entries, books } = Astro.props;
 const prompt = settings?.prompt ?? 'magnus@mhillestad.com:~$';
 const backLabel = settings?.backLinkLabel ?? 'cd ~';
-const html = renderBody(page.body, groups);
+const html = renderBody(page.body, groups, entries, books);
 ---
 
 <Terminal

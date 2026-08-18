@@ -1,0 +1,46 @@
+---
+import Terminal from '../../../layouts/Terminal.astro';
+import DraftBanner from '../../../components/DraftBanner.astro';
+import { getSiteContent } from '../../../lib/sanity';
+import { renderBody } from '../../../lib/render';
+import { isDraftMode, readToken } from '../../../lib/preview';
+
+// Server-rendered so an unpublished post can be previewed before it has a
+// public route at all.
+export const prerender = false;
+
+const token = readToken();
+if (!isDraftMode(Astro.request) || !token) {
+  return Astro.redirect('/', 307);
+}
+
+const { slug } = Astro.params;
+const content = await getSiteContent({ perspective: 'drafts', token });
+const post = content.posts.find((p) => p.slug === slug);
+if (!post) {
+  return new Response('Not found', { status: 404 });
+}
+
+const prompt = content.settings?.prompt ?? 'magnus@mhillestad.com:~$';
+const backLabel = content.settings?.backLinkLabel ?? 'cd ~';
+const html = renderBody(
+  post.body,
+  content.homepage?.investmentGroups ?? [],
+  content.entries,
+  content.books,
+);
+---
+
+<Terminal title={`Preview — ${post.title}`} description={post.metaDescription}>
+  <DraftBanner />
+  <div id="screen">
+    <div class="cmd-line">
+      <span class="prompt">{prompt}</span> {`cat blog/${post.slug}`}
+    </div>
+    <div class="dim">{post.date}</div>
+    <div class="out" set:html={html} />
+    <div class="cmd-line">
+      <span class="prompt">{prompt}</span> <a href="/preview">{backLabel}</a>
+    </div>
+  </div>
+</Terminal>

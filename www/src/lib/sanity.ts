@@ -40,7 +40,54 @@ export interface InvestmentTable {
   group: string;
 }
 
-export type BodyBlock = TextBlock | InvestmentTable;
+export interface EntryList {
+  _type: 'entryList';
+  _key?: string;
+  /** Optional filter; when absent, posts, talks and press are listed together. */
+  kind?: EntryKind;
+  limit?: number;
+}
+
+export interface BookList {
+  _type: 'bookList';
+  _key?: string;
+  showNotes?: boolean;
+}
+
+export type BodyBlock = TextBlock | InvestmentTable | EntryList | BookList;
+
+export type EntryKind = 'post' | 'talk' | 'press';
+
+/** A post, talk or press mention, listed by the `blog` command. */
+export interface Entry {
+  title: string;
+  kind: EntryKind;
+  /** ISO date (YYYY-MM-DD). The listing sorts on this. */
+  date: string;
+  outlet?: string;
+  /** Set when the piece lives elsewhere on the web. */
+  url?: string;
+  /** Absolute path on this site, set for posts written here. */
+  path?: string;
+}
+
+/** A book on the reading list, printed by the `books` command. */
+export interface Book {
+  title: string;
+  author: string;
+  year?: number;
+  url?: string;
+  note?: string;
+}
+
+/** A post written on this site, served at /blog/<slug>. */
+export interface BlogPost {
+  title: string;
+  slug: string;
+  date: string;
+  metaDescription?: string;
+  body?: BodyBlock[];
+}
 
 export interface Command {
   name: string;
@@ -104,6 +151,11 @@ export interface SiteContent {
   settings: SiteSettings | null;
   homepage: Homepage | null;
   pages: LandingPage[];
+  /** Posts written here and pieces published elsewhere, merged, newest first. */
+  entries: Entry[];
+  /** The posts written here, with their bodies, for their own routes. */
+  posts: BlogPost[];
+  books: Book[];
 }
 
 // Ordering lives in the homepage's reference arrays, so the projections below
@@ -128,7 +180,17 @@ const QUERY = `{
   },
   "pages": *[_type == "landingPage" && defined(slug.current)]{
     title, "slug": slug.current, metaDescription, body
-  }
+  },
+  "entries": *[_type == "entry" && defined(date)] | order(date desc){
+    title, kind, date, outlet, url
+  },
+  "posts": *[_type == "blogPost" && defined(date) && defined(slug.current)] | order(date desc){
+    title, "slug": slug.current, date, metaDescription, body
+  },
+  "books": *[_type == "book" && defined(title) && defined(author)]
+    | order(author asc, title asc){
+      title, author, year, url, note
+    }
 }`;
 
 /**
@@ -164,9 +226,27 @@ export async function getSiteContent(
         investmentGroups: (result.homepage.investmentGroups ?? []).filter(Boolean),
       }
     : null;
+  const posts = (result?.posts ?? []).filter((p) => p?.title && p.slug && p.date);
+
+  // The listing is one chronological run over two types: posts written here and
+  // pieces published elsewhere. Merging at read time keeps the renderer simple
+  // and means a post never has to be mirrored as an entry to be listed.
+  const entries: Entry[] = [
+    ...(result?.entries ?? []).filter((e) => e?.title && e.date && e.url),
+    ...posts.map((p) => ({
+      title: p.title,
+      kind: 'post' as const,
+      date: p.date,
+      path: `/blog/${p.slug}`,
+    })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
   return {
     settings: result?.settings ?? null,
     homepage,
     pages: result?.pages ?? [],
+    entries,
+    posts,
+    books: (result?.books ?? []).filter((b) => b?.title && b?.author),
   };
 }

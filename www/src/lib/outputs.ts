@@ -17,6 +17,8 @@ const DEFAULT_NOT_FOUND = 'command not found: {cmd} — try `help`';
 export function buildTerminalData(content: SiteContent): TerminalData {
   const groups = content.homepage?.investmentGroups ?? [];
   const slots = content.homepage?.commands ?? [];
+  const entries = content.entries ?? [];
+  const books = content.books ?? [];
 
   const outputs: Record<string, string> = {};
   const builtins: Record<string, { id: string; url?: string }> = {};
@@ -31,7 +33,7 @@ export function buildTerminalData(content: SiteContent): TerminalData {
       }
       for (const n of names) builtins[n] = { id: command.builtinId, url: command.url };
     } else {
-      const html = renderBody(command.body, groups);
+      const html = renderBody(command.body, groups, entries, books);
       for (const n of names) outputs[n] = html;
     }
   }
