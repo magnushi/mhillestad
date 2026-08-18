@@ -155,7 +155,8 @@ const { outputs, builtins, variants, notFoundMessage, prompt, bootCommand } = As
     const base = parts[0];
     const table = Object.prototype.hasOwnProperty.call(VARIANTS, base) ? VARIANTS[base] : null;
     if (!table) return null;
-    const word = parts.slice(1).join(' ').replace(/^-+/, '').toLowerCase();
+    // Trim after stripping dashes too, so `blog - talk` is the same request.
+    const word = parts.slice(1).join(' ').replace(/^[-\s]+/, '').trim().toLowerCase();
     if (Object.prototype.hasOwnProperty.call(table, word)) {
       return { html: table[word] };
     }
