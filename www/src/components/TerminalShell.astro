@@ -200,7 +200,9 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
 
   document.getElementById('input-line').addEventListener('submit', (e) => {
     e.preventDefault();
-    run(stdin.value.trim().toLowerCase());
+    // Collapse runs of spaces so `blog   -talks` matches `blog -talks`, which
+    // is registered as a single key.
+    run(stdin.value.trim().toLowerCase().replace(/\s+/g, ' '));
     stdin.value = '';
   });
 
