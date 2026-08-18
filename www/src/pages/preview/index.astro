@@ -19,7 +19,7 @@ if (!isDraftMode(Astro.request) || !token) {
 
 const content = await getSiteContent({ perspective: 'drafts', token });
 const { settings, homepage } = content;
-const { outputs, builtins, notFoundMessage } = buildTerminalData(content);
+const { outputs, builtins, variants, notFoundMessage } = buildTerminalData(content);
 ---
 
 <Terminal
@@ -30,6 +30,7 @@ const { outputs, builtins, notFoundMessage } = buildTerminalData(content);
   <TerminalShell
     outputs={outputs}
     builtins={builtins}
+    variants={variants}
     notFoundMessage={notFoundMessage}
     prompt={settings?.prompt ?? 'magnus@mhillestad.com:~$'}
     bootCommand={homepage?.bootCommand ?? 'help'}

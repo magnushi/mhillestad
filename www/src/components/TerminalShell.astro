@@ -4,11 +4,13 @@
 interface Props {
   outputs: Record<string, string>;
   builtins: Record<string, { id: string; url?: string }>;
+  /** Command -> filter word -> pre-rendered HTML, for `blog -talks`. */
+  variants: Record<string, Record<string, string>>;
   notFoundMessage: string;
   prompt: string;
   bootCommand: string;
 }
-const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
+const { outputs, builtins, variants, notFoundMessage, prompt, bootCommand } = Astro.props;
 ---
 
 <div id="screen"></div>
@@ -20,6 +22,7 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
 <script is:inline define:vars={{
     OUTPUTS: outputs,
     BUILTINS: builtins,
+    VARIANTS: variants,
     NOT_FOUND: notFoundMessage,
     PS1: prompt,
     BOOT: bootCommand,
@@ -139,6 +142,26 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
     timer = setInterval(step, TICK);
   }
 
+  // `blog -talks` is one command plus a filter. The filtering itself happened at
+  // build time — each variant is already rendered — so all this does is work out
+  // which pre-rendered variant was asked for.
+  //
+  // Dashes are stripped rather than matched, so -talks, --talks and -TALKS are
+  // the same request, and an unrecognised filter says so instead of reporting
+  // the whole line as an unknown command.
+  function resolveFilter(cmd) {
+    const parts = cmd.split(' ').filter(Boolean);
+    if (parts.length < 2) return null;
+    const base = parts[0];
+    const table = Object.prototype.hasOwnProperty.call(VARIANTS, base) ? VARIANTS[base] : null;
+    if (!table) return null;
+    const word = parts.slice(1).join(' ').replace(/^-+/, '').toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(table, word)) {
+      return { html: table[word] };
+    }
+    return { unknown: word, base, options: Object.keys(table) };
+  }
+
   function run(cmd) {
     const line = document.createElement('div');
     line.className = 'cmd-line';
@@ -152,6 +175,7 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
     // homepage registry — so a builtin can be renamed or hidden in the Studio
     // without touching this file.
     const builtin = Object.prototype.hasOwnProperty.call(BUILTINS, cmd) ? BUILTINS[cmd] : null;
+    const filter = resolveFilter(cmd);
 
     if (builtin?.id === 'clear') {
       screen.innerHTML = '';
@@ -181,6 +205,20 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
       const out = document.createElement('div');
       out.className = 'out';
       out.innerHTML = OUTPUTS[cmd];
+      screen.appendChild(out);
+    } else if (filter?.html !== undefined) {
+      const out = document.createElement('div');
+      out.className = 'out';
+      out.innerHTML = filter.html;
+      screen.appendChild(out);
+    } else if (filter?.unknown !== undefined) {
+      const out = document.createElement('div');
+      out.className = 'out';
+      // Name the filters that do exist: the point of a hidden feature is that
+      // it tells you how to use it once you have found it.
+      out.textContent =
+        `no such filter: -${filter.unknown} — ` +
+        `try ${filter.options.map((o) => `-${o}`).join(', ')}\n`;
       screen.appendChild(out);
     } else if (cmd) {
       const out = document.createElement('div');
@@ -219,7 +257,8 @@ const { outputs, builtins, notFoundMessage, prompt, bootCommand } = Astro.props;
   const requested = new URLSearchParams(location.search).get('run');
   const known = (c) =>
     Object.prototype.hasOwnProperty.call(OUTPUTS, c) ||
-    Object.prototype.hasOwnProperty.call(BUILTINS, c);
+    Object.prototype.hasOwnProperty.call(BUILTINS, c) ||
+    resolveFilter(c)?.html !== undefined;
   if (requested && known(requested)) {
     run(requested);
   }

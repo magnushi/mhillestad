@@ -9,38 +9,49 @@ export interface TerminalData {
   outputs: Record<string, string>;
   /** Command (and alias) name -> the builtin it runs, plus any config it needs. */
   builtins: Record<string, { id: string; url?: string }>;
+  /**
+   * Command name -> filter word -> rendered HTML, for `blog -talks`.
+   *
+   * Every accepted spelling of a filter is a key here, so the terminal only has
+   * to strip the dashes off what was typed and look it up. Each variant is
+   * rendered at build time like any other output.
+   */
+  variants: Record<string, Record<string, string>>;
   notFoundMessage: string;
 }
 
 const DEFAULT_NOT_FOUND = 'command not found: {cmd} — try `help`';
 
-// Flags that narrow a listing to one kind, e.g. `blog -talks`. Any command
-// whose body prints a blog listing gets these for free — they are generated
-// here rather than authored, so a new command with a listing in it cannot
-// forget them, and they never need a document of their own.
+// Words that narrow a listing to one kind, e.g. `blog -talks`. Any command whose
+// body prints a blog listing gets these for free — they are generated here
+// rather than authored, so a new command with a listing in it cannot forget
+// them, and they never need a document of their own.
 //
-// They stay out of `help` because help is built from the homepage registry,
-// and these are not registry entries. Hidden, but typeable.
-const KIND_FLAGS: Record<string, EntryKind> = {
-  '-post': 'post',
-  '-posts': 'post',
-  '-blog': 'post',
-  '-blogs': 'post',
-  '-writing': 'post',
-  '-talk': 'talk',
-  '-talks': 'talk',
-  '-video': 'talk',
-  '-videos': 'talk',
-  '-press': 'press',
-  '-interview': 'press',
-  '-interviews': 'press',
+// Written without the leading dash: the terminal strips dashes before looking a
+// word up, so `-talk`, `--talk` and `-TALK` all arrive here as "talk".
+//
+// They stay out of `help` because help is built from the homepage registry, and
+// these are not registry entries. Hidden, but typeable.
+const KIND_FILTERS: Record<string, EntryKind> = {
+  post: 'post',
+  posts: 'post',
+  blog: 'post',
+  blogs: 'post',
+  writing: 'post',
+  talk: 'talk',
+  talks: 'talk',
+  video: 'talk',
+  videos: 'talk',
+  press: 'press',
+  interview: 'press',
+  interviews: 'press',
 };
 
 // The same idea for the reading list: `books -fiction`.
-const CATEGORY_FLAGS: Record<string, BookCategory> = {
-  '-fiction': 'fiction',
-  '-nonfiction': 'nonfiction',
-  '-non-fiction': 'nonfiction',
+const CATEGORY_FILTERS: Record<string, BookCategory> = {
+  fiction: 'fiction',
+  nonfiction: 'nonfiction',
+  'non-fiction': 'nonfiction',
 };
 
 /** Force every blog listing in a body to one kind, for a `-flag` variant. */
@@ -61,6 +72,7 @@ export function buildTerminalData(content: SiteContent): TerminalData {
 
   const outputs: Record<string, string> = {};
   const builtins: Record<string, { id: string; url?: string }> = {};
+  const variants: Record<string, Record<string, string>> = {};
 
   for (const { command } of slots) {
     const names = [command.name, ...(command.aliases ?? [])];
@@ -77,19 +89,21 @@ export function buildTerminalData(content: SiteContent): TerminalData {
 
       // `blog -talks` and friends, for any command that prints a listing.
       const body = command.body ?? [];
+      const forCommand: Record<string, string> = {};
+
       if (body.some((block) => block._type === 'entryList')) {
-        for (const [flag, kind] of Object.entries(KIND_FLAGS)) {
-          const filtered = renderBody(bodyForKind(body, kind), groups, entries, books);
-          for (const n of names) outputs[`${n} ${flag}`] = filtered;
+        for (const [word, kind] of Object.entries(KIND_FILTERS)) {
+          forCommand[word] = renderBody(bodyForKind(body, kind), groups, entries, books);
         }
       }
-
       // `books -fiction` and friends, likewise.
       if (body.some((block) => block._type === 'bookList')) {
-        for (const [flag, category] of Object.entries(CATEGORY_FLAGS)) {
-          const filtered = renderBody(bodyForCategory(body, category), groups, entries, books);
-          for (const n of names) outputs[`${n} ${flag}`] = filtered;
+        for (const [word, category] of Object.entries(CATEGORY_FILTERS)) {
+          forCommand[word] = renderBody(bodyForCategory(body, category), groups, entries, books);
         }
+      }
+      if (Object.keys(forCommand).length) {
+        for (const n of names) variants[n] = forCommand;
       }
     }
   }
@@ -114,6 +128,7 @@ export function buildTerminalData(content: SiteContent): TerminalData {
   return {
     outputs,
     builtins,
+    variants,
     notFoundMessage: content.settings?.notFoundMessage ?? DEFAULT_NOT_FOUND,
   };
 }
