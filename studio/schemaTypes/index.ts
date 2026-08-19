@@ -15,6 +15,8 @@ import { investment } from './investment';
 import { investmentGroup } from './investmentGroup';
 import { investmentTable } from './investmentTable';
 import { landingPage } from './landingPage';
+import { podcast } from './podcast';
+import { podcastList } from './podcastList';
 import { runCommand } from './runCommand';
 import { siteSettings } from './siteSettings';
 import { source } from './source';
@@ -28,6 +30,7 @@ export const schemaTypes = [
   blogPost,
   entry,
   book,
+  podcast,
   investment,
   siteSettings,
   source,
@@ -35,6 +38,7 @@ export const schemaTypes = [
   commandSlot,
   entryList,
   bookList,
+  podcastList,
   investmentGroup,
   investmentTable,
   terminalLink,

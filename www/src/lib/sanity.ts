@@ -56,7 +56,13 @@ export interface BookList {
   showNotes?: boolean;
 }
 
-export type BodyBlock = TextBlock | InvestmentTable | EntryList | BookList;
+export interface PodcastList {
+  _type: 'podcastList';
+  _key?: string;
+  showNotes?: boolean;
+}
+
+export type BodyBlock = TextBlock | InvestmentTable | EntryList | BookList | PodcastList;
 
 export type EntryKind = 'post' | 'talk' | 'press';
 
@@ -86,6 +92,14 @@ export interface Book {
   author: string;
   category?: BookCategory;
   year?: number;
+  url?: string;
+  note?: string;
+}
+
+/** A podcast on the list, printed by the `podcasts` command. */
+export interface Podcast {
+  title: string;
+  host?: string;
   url?: string;
   note?: string;
 }
@@ -166,6 +180,7 @@ export interface SiteContent {
   /** The posts written here, with their bodies, for their own routes. */
   posts: BlogPost[];
   books: Book[];
+  podcasts: Podcast[];
 }
 
 // Ordering lives in the homepage's reference arrays, so the projections below
@@ -200,7 +215,10 @@ const QUERY = `{
   "books": *[_type == "book" && showOnSite == true && defined(title) && defined(author)]
     | order(author asc, title asc){
       title, author, category, year, url, note
-    }
+    },
+  "podcasts": *[_type == "podcast" && defined(title)] | order(title asc){
+    title, host, url, note
+  }
 }`;
 
 /**
@@ -258,5 +276,6 @@ export async function getSiteContent(
     entries,
     posts,
     books: (result?.books ?? []).filter((b) => b?.title && b?.author),
+    podcasts: (result?.podcasts ?? []).filter((p) => p?.title),
   };
 }

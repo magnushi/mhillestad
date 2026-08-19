@@ -9,9 +9,23 @@ import type {
   Entry,
   EntryList,
   InvestmentGroup,
+  Podcast,
+  PodcastList,
   TextBlock,
   InvestmentTable,
 } from './sanity';
+
+/**
+ * Everything a body might need to print. Passed as one object rather than a
+ * growing parameter list, so adding a new kind of listing does not mean editing
+ * every call site again.
+ */
+export interface RenderContext {
+  groups: InvestmentGroup[];
+  entries: Entry[];
+  books: Book[];
+  podcasts: Podcast[];
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -118,19 +132,37 @@ function renderBookList(block: BookList, books: Book[]): string {
   return `<table class="inv books">${rows}</table>`;
 }
 
+function renderPodcastList(block: PodcastList, podcasts: Podcast[]): string {
+  // `podcasts` arrives sorted by title from the query.
+  const rows = podcasts
+    .map((p) => {
+      const title = escapeHtml(p.title);
+      const linked = p.url
+        ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener">${title}</a>`
+        : title;
+      const note =
+        block.showNotes && p.note
+          ? `<tr><td></td><td class="dim note">${escapeHtml(p.note)}</td></tr>`
+          : '';
+      return `<tr><td>${linked}</td><td class="dim">${escapeHtml(p.host ?? '')}</td></tr>${note}`;
+    })
+    .join('');
+  if (!rows) {
+    console.warn('Podcast list has no podcasts; skipping.');
+    return '';
+  }
+  return `<table class="inv podcasts">${rows}</table>`;
+}
+
 /** Render a command or page body to an HTML string. */
-export function renderBody(
-  body: BodyBlock[] | undefined,
-  groups: InvestmentGroup[],
-  entries: Entry[],
-  books: Book[],
-): string {
+export function renderBody(body: BodyBlock[] | undefined, ctx: RenderContext): string {
   if (!body?.length) return '';
   return body
     .map((block) => {
-      if (block._type === 'investmentTable') return renderInvestmentTable(block, groups);
-      if (block._type === 'entryList') return renderEntryList(block, entries);
-      if (block._type === 'bookList') return renderBookList(block, books);
+      if (block._type === 'investmentTable') return renderInvestmentTable(block, ctx.groups);
+      if (block._type === 'entryList') return renderEntryList(block, ctx.entries);
+      if (block._type === 'bookList') return renderBookList(block, ctx.books);
+      if (block._type === 'podcastList') return renderPodcastList(block, ctx.podcasts);
       return renderTextBlock(block as TextBlock);
     })
     .join('\n');

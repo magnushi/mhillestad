@@ -2,6 +2,7 @@
 // the live page and the draft preview so the two can never render differently.
 
 import { renderBody } from './render';
+import type { RenderContext } from './render';
 import type { BodyBlock, BookCategory, EntryKind, SiteContent } from './sanity';
 
 export interface TerminalData {
@@ -65,10 +66,13 @@ function bodyForCategory(body: BodyBlock[], category: BookCategory): BodyBlock[]
 }
 
 export function buildTerminalData(content: SiteContent): TerminalData {
-  const groups = content.homepage?.investmentGroups ?? [];
   const slots = content.homepage?.commands ?? [];
-  const entries = content.entries ?? [];
-  const books = content.books ?? [];
+  const ctx: RenderContext = {
+    groups: content.homepage?.investmentGroups ?? [],
+    entries: content.entries ?? [],
+    books: content.books ?? [],
+    podcasts: content.podcasts ?? [],
+  };
 
   const outputs: Record<string, string> = {};
   const builtins: Record<string, { id: string; url?: string }> = {};
@@ -84,7 +88,7 @@ export function buildTerminalData(content: SiteContent): TerminalData {
       }
       for (const n of names) builtins[n] = { id: command.builtinId, url: command.url };
     } else {
-      const html = renderBody(command.body, groups, entries, books);
+      const html = renderBody(command.body, ctx);
       for (const n of names) outputs[n] = html;
 
       // `blog -talks` and friends, for any command that prints a listing.
@@ -93,13 +97,13 @@ export function buildTerminalData(content: SiteContent): TerminalData {
 
       if (body.some((block) => block._type === 'entryList')) {
         for (const [word, kind] of Object.entries(KIND_FILTERS)) {
-          forCommand[word] = renderBody(bodyForKind(body, kind), groups, entries, books);
+          forCommand[word] = renderBody(bodyForKind(body, kind), ctx);
         }
       }
       // `books -fiction` and friends, likewise.
       if (body.some((block) => block._type === 'bookList')) {
         for (const [word, category] of Object.entries(CATEGORY_FILTERS)) {
-          forCommand[word] = renderBody(bodyForCategory(body, category), groups, entries, books);
+          forCommand[word] = renderBody(bodyForCategory(body, category), ctx);
         }
       }
       if (Object.keys(forCommand).length) {

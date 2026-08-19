@@ -36,6 +36,10 @@ const locations = {
       locations: [{ title: doc?.title || 'Untitled', href: `/blog/${doc?.slug}` }],
     }),
   }),
+  podcast: defineLocations({
+    message: 'Appears in the `podcasts` list in the terminal.',
+    tone: 'caution',
+  }),
   book: defineLocations({
     message: 'Appears in the `books` reading list in the terminal.',
     tone: 'caution',
@@ -120,6 +124,16 @@ export default defineConfig([
                   .apiVersion('2021-06-07'),
               ),
             S.listItem()
+              .title('Podcasts')
+              .id('podcasts')
+              .child(
+                S.documentList()
+                  .title('Podcasts')
+                  .filter('_type == "podcast"')
+                  .defaultOrdering([{ field: 'title', direction: 'asc' }])
+                  .apiVersion('2021-06-07'),
+              ),
+            S.listItem()
               .title('Books')
               .id('books')
               .child(
@@ -154,6 +168,7 @@ export default defineConfig([
                   'blogPost',
                   'entry',
                   'book',
+                  'podcast',
                   'investment',
                   'source',
                   'siteSettings',
