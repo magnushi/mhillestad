@@ -3,6 +3,7 @@ import { structureTool } from 'sanity/structure';
 import { presentationTool, defineDocuments, defineLocations } from 'sanity/presentation';
 import { visionTool } from '@sanity/vision';
 import { schemaTypes } from './schemaTypes';
+import { contactMessage } from './schemaTypes/contactMessage';
 
 const SITE_URL = process.env.SANITY_STUDIO_PREVIEW_URL || 'https://www.mhillestad.com';
 
@@ -56,9 +57,19 @@ const locations = {
   }),
 };
 
-export default defineConfig({
+// Two workspaces, because the two datasets have opposite access rules.
+//
+// Sanity requires every workspace basePath to have the same number of segments,
+// so adding `inbox` moves the main workspace off `/` and onto `/content`. The
+// Studio root now shows a picker between the two.
+// `production` is public-read and holds the site. `inbox` is private and holds
+// what visitors send through the contact form — names and email addresses that
+// must not be readable without a token. Mixing them would publish personal data.
+export default defineConfig([
+  {
   name: 'default',
   title: 'mhillestad.com',
+  basePath: '/content',
   projectId: '301op25o',
   dataset: 'production',
   plugins: [
@@ -157,4 +168,47 @@ export default defineConfig({
     // Home page is a singleton at a fixed id; hide it from "create new".
     templates: (prev) => prev.filter((t) => t.schemaType !== 'homepage'),
   },
-});
+  },
+  {
+    name: 'inbox',
+    title: 'Inbox',
+    basePath: '/inbox',
+    projectId: '301op25o',
+    dataset: 'inbox',
+    plugins: [
+      structureTool({
+        structure: (S) =>
+          S.list()
+            .title('Inbox')
+            .items([
+              S.listItem()
+                .title('Unhandled')
+                .id('unhandled')
+                .child(
+                  S.documentList()
+                    .title('Unhandled')
+                    .filter('_type == "contactMessage" && handled != true')
+                    .defaultOrdering([{ field: 'submittedAt', direction: 'desc' }])
+                    .apiVersion('2021-06-07'),
+                ),
+              S.listItem()
+                .title('All messages')
+                .id('all')
+                .child(
+                  S.documentList()
+                    .title('All messages')
+                    .filter('_type == "contactMessage"')
+                    .defaultOrdering([{ field: 'submittedAt', direction: 'desc' }])
+                    .apiVersion('2021-06-07'),
+                ),
+            ]),
+      }),
+      visionTool({ defaultApiVersion: '2021-06-07' }),
+    ],
+    schema: {
+      types: [contactMessage],
+      // Messages arrive from the site; creating one by hand would be noise.
+      templates: [],
+    },
+  },
+]);

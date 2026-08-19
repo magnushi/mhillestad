@@ -142,6 +142,108 @@ const { outputs, builtins, variants, notFoundMessage, prompt, bootCommand } = As
     timer = setInterval(step, TICK);
   }
 
+  // The contact form. A builtin rather than block content because it needs a
+  // submit handler and a network call — the same reason snake is one.
+  //
+  // Nothing here trusts the browser: the endpoint revalidates every field and
+  // stamps the time itself. The honeypot and the elapsed-time value are only a
+  // first filter, cheap enough to be worth having.
+  function startContact() {
+    const openedAt = Date.now();
+
+    const out = document.createElement('div');
+    out.className = 'out';
+
+    const form = document.createElement('form');
+    form.className = 'contact-form';
+    form.noValidate = true;
+
+    const field = (label, el) => {
+      const wrap = document.createElement('label');
+      const span = document.createElement('span');
+      span.className = 'dim';
+      span.textContent = label;
+      wrap.append(span, el);
+      return wrap;
+    };
+
+    const name = document.createElement('input');
+    name.type = 'text';
+    name.maxLength = 100;
+    name.autocomplete = 'name';
+
+    const email = document.createElement('input');
+    email.type = 'email';
+    email.maxLength = 200;
+    email.autocomplete = 'email';
+
+    const message = document.createElement('textarea');
+    message.rows = 4;
+    message.maxLength = 5000;
+
+    // Hidden from people, visible to bots that fill every input they find.
+    const honeypot = document.createElement('input');
+    honeypot.type = 'text';
+    honeypot.name = 'website';
+    honeypot.tabIndex = -1;
+    honeypot.setAttribute('aria-hidden', 'true');
+    honeypot.className = 'honeypot';
+
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.textContent = 'send';
+
+    const status = document.createElement('div');
+    status.className = 'dim';
+    status.setAttribute('role', 'status');
+
+    form.append(
+      field('name    ', name),
+      field('email   ', email),
+      field('message ', message),
+      honeypot,
+      submit,
+      status,
+    );
+    out.append(form);
+    screen.appendChild(out);
+    name.focus();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (submit.disabled) return;
+      submit.disabled = true;
+      status.textContent = 'sending...';
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            name: name.value,
+            email: email.value,
+            message: message.value,
+            website: honeypot.value,
+            elapsedMs: Date.now() - openedAt,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          // Replace the form with the outcome, so it cannot be sent twice.
+          form.replaceChildren();
+          form.textContent = 'thanks — that reached me. i will reply to ' + email.value;
+          return;
+        }
+        status.textContent = data.error || 'could not send that. please try again.';
+        submit.disabled = false;
+      } catch {
+        status.textContent = 'no connection. please try again.';
+        submit.disabled = false;
+      }
+    });
+
+    stdin.focus();
+  }
+
   // `blog -talks` is one command plus a filter. The filtering itself happened at
   // build time — each variant is already rendered — so all this does is work out
   // which pre-rendered variant was asked for.
@@ -182,6 +284,10 @@ const { outputs, builtins, variants, notFoundMessage, prompt, bootCommand } = As
       screen.innerHTML = '';
     } else if (builtin?.id === 'snake') {
       startSnake();
+      window.scrollTo(0, document.body.scrollHeight);
+      return;
+    } else if (builtin?.id === 'contact') {
+      startContact();
       window.scrollTo(0, document.body.scrollHeight);
       return;
     } else if (builtin?.id === 'open') {
@@ -247,8 +353,10 @@ const { outputs, builtins, variants, notFoundMessage, prompt, bootCommand } = As
 
   // keep focus on the terminal input (but never steal a text selection, and
   // leave the input alone while a game is running)
-  document.body.addEventListener('click', () => {
+  document.body.addEventListener('click', (e) => {
     if (snakeActive) return;
+    // Never steal focus from the contact form's own fields.
+    if (e.target.closest('.contact-form')) return;
     if (!window.getSelection()?.toString()) stdin.focus();
   });
 

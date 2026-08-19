@@ -43,6 +43,7 @@ export const command = defineType({
           { title: 'Clear the screen', value: 'clear' },
           { title: 'Help listing', value: 'help' },
           { title: 'Open a link', value: 'open' },
+          { title: 'Contact form', value: 'contact' },
         ],
       },
       hidden: ({ parent }) => parent?.kind !== 'builtin',

@@ -140,6 +140,73 @@ const { title, description } = Astro.props;
       table.books td.note {
         padding-bottom: 0.35rem;
       }
+
+      /* The contact form. Inputs are underlines rather than boxes, so the form
+         reads as part of the terminal rather than a widget dropped into it. */
+      .contact-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin: 0.4rem 0 0.5rem 2ch;
+        max-width: 52ch;
+      }
+
+      .contact-form label {
+        display: flex;
+        align-items: baseline;
+        gap: 1ch;
+      }
+
+      .contact-form input,
+      .contact-form textarea {
+        flex: 1;
+        min-width: 0;
+        background: none;
+        border: none;
+        border-bottom: 1px solid var(--dim);
+        outline: none;
+        font: inherit;
+        color: var(--fg);
+        caret-color: var(--green);
+        padding: 0 0 0.15rem;
+      }
+
+      .contact-form textarea {
+        resize: vertical;
+      }
+
+      .contact-form input:focus,
+      .contact-form textarea:focus {
+        border-bottom-color: var(--green);
+      }
+
+      .contact-form button {
+        align-self: flex-start;
+        background: none;
+        border: 1px solid var(--dim);
+        font: inherit;
+        color: var(--link);
+        cursor: pointer;
+        padding: 0.1rem 1.5ch;
+      }
+
+      .contact-form button:hover:not(:disabled) {
+        border-color: var(--link);
+      }
+
+      .contact-form button:disabled {
+        color: var(--dim);
+        cursor: default;
+      }
+
+      /* Off-screen rather than display:none, which many bots skip. */
+      .contact-form .honeypot {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+      }
     </style>
   </head>
   <body>
