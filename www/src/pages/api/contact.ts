@@ -30,9 +30,11 @@ function bad(message: string, status = 400) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const token =
-    (import.meta.env?.SANITY_WRITE_TOKEN as string | undefined) ??
-    process.env.SANITY_WRITE_TOKEN;
+  // Read from process.env only, never import.meta.env: Vite inlines the latter
+  // into the built bundle, which puts the literal token in a deployed file and
+  // trips Netlify's secret scanning (it failed two deploys before this).
+  // A runtime secret must stay a runtime lookup.
+  const token = process.env.SANITY_WRITE_TOKEN;
   if (!token) {
     // Fail loudly rather than silently dropping someone's message.
     console.error('SANITY_WRITE_TOKEN is not set; cannot store contact messages.');
