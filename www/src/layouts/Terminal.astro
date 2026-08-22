@@ -136,6 +136,14 @@ const { title, description } = Astro.props;
         padding-right: 2ch;
       }
 
+      /* The help listing: command names in one column, descriptions in the
+         next. Names never wrap, so every description starts at the same
+         column no matter how long the longest command is. */
+      table.help td:first-child {
+        white-space: nowrap;
+        padding-right: 3ch;
+      }
+
       /* Notes sit under their book, indented into the author column. */
       table.books td.note {
         padding-bottom: 0.35rem;

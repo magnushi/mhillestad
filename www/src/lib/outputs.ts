@@ -1,7 +1,7 @@
 // Turns the homepage's command registry into what the terminal needs. Shared by
 // the live page and the draft preview so the two can never render differently.
 
-import { renderBody } from './render';
+import { escapeHtml, renderBody } from './render';
 import type { RenderContext } from './render';
 import type { BodyBlock, BookCategory, EntryKind, SiteContent } from './sanity';
 
@@ -114,15 +114,24 @@ export function buildTerminalData(content: SiteContent): TerminalData {
 
   // The help listing is the registry filtered to the advertised entries, in the
   // order they were dragged. `help` itself is generated, not authored.
+  //
+  // Rendered as a table, like every other listing. It used to be a tab between
+  // the name and the description, which lands on whatever tab stop the browser
+  // picks — so a long command name pushed its description into the next column
+  // and the descriptions never lined up. A table gives one column width for the
+  // whole list, computed from the longest name.
   const intro = content.settings?.helpIntro ?? 'available commands:';
   const rows = slots
     .filter((s) => s.listed)
-    .map(
-      ({ command }) =>
-        `  <button class="cmd" data-cmd="${command.name}">${command.name}</button>\t${command.description ?? ''}`,
-    )
-    .join('\n');
-  outputs.help = `${intro}\n\n${rows}`;
+    .map(({ command }) => {
+      const name = escapeHtml(command.name);
+      return (
+        `<tr><td><button class="cmd" data-cmd="${name}">${name}</button></td>` +
+        `<td class="dim">${escapeHtml(command.description ?? '')}</td></tr>`
+      );
+    })
+    .join('');
+  outputs.help = `${intro}\n<table class="inv help">${rows}</table>`;
 
   // Any alias of the help builtin should print the same thing.
   for (const [name, b] of Object.entries(builtins)) {
