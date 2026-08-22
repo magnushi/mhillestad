@@ -59,27 +59,29 @@ Secrets live in `.env` (gitignored — see `.env.example`):
 | `SANITY_MCP_TOKEN` | Sanity API token (read access) sent as Bearer auth |
 
 > **Knowledge base prerequisite:** the Sanity MCP endpoint only serves datasets
-> with a **deployed Sanity Studio (v5.1.0+)**. Until a Studio is deployed for
-> `301op25o/production`, the MCP server returns an error and the site refuses
-> to answer. No code change is needed once the Studio is live.
+> with a **deployed Sanity Studio (v5.1.0+)**. That Studio lives in `studio/` in
+> this repo and is deployed, so the endpoint serves `301op25o/production`. If it
+> is ever undeployed the MCP server returns an error and the site refuses to
+> answer — by design, not a bug to work around.
 
 The site is built with `base: '/IndustrialRevolutions'` so it can be served
 under a path of an existing domain.
 
-## Deployment plan (not yet done)
+## Deployment
 
-Target: `www.mhillestad.com/IndustrialRevolutions` (domain already on Netlify).
+Deployed as its own Netlify site, `mhillestad-indrev`, and served at
+`www.mhillestad.com/IndustrialRevolutions` through a proxy rewrite on the main
+site (`www/public/_redirects` in this repo). Base directory
+`industrialrevolutions`, build `npm run build`, publish `dist`.
 
-1. Swap `@astrojs/node` for `@astrojs/netlify` in `astro.config.mjs` and deploy
-   this repo as its own Netlify site (the chat endpoint becomes a Netlify
-   Function; streaming is supported).
-2. Set `ANTHROPIC_API_KEY`, `SANITY_MCP_URL`, `SANITY_MCP_TOKEN` as environment
-   variables on that Netlify site.
-3. On the Netlify site serving `www.mhillestad.com`, add a proxy rewrite:
+The chat endpoint runs as a Netlify Function, which supports streaming. Set
+`ANTHROPIC_API_KEY`, `SANITY_MCP_URL` and `SANITY_MCP_TOKEN` on the site; do not
+set `KB_OPTIONAL`.
 
-   ```
-   /IndustrialRevolutions/* https://<this-site>.netlify.app/IndustrialRevolutions/:splat 200
-   ```
+Astro prefixes asset URLs with `base`, so the built page requests
+`/IndustrialRevolutions/_astro/*` while the files are published at the root —
+`netlify.toml` rewrites that path back. Without it the site loads unstyled in
+production only, since `astro dev` serves everything under the base path.
 
 ## Sources & attribution
 
