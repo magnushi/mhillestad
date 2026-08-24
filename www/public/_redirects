@@ -3,3 +3,16 @@
 # rewrites rather than redirects, so the visitor keeps seeing this domain.
 /IndustrialRevolutions/*  https://mhillestad-indrev.netlify.app/IndustrialRevolutions/:splat  200
 /IndustrialRevolutions    https://mhillestad-indrev.netlify.app/IndustrialRevolutions          200
+
+# Proxy the Sanity Studio (its own Netlify deploy, site "mhillestad-studio") at
+# /admin. It is built with a base path of /admin, so the prefix is passed
+# through rather than stripped — the Studio's own router and asset URLs expect
+# to see it.
+/admin/*  https://mhillestad-studio.netlify.app/admin/:splat  200
+/admin    https://mhillestad-studio.netlify.app/admin          200
+
+# Sanity's HTML template leaves the Studio's icons and web manifest at an
+# unprefixed /static/*, so they miss the /admin rule above. The main site has
+# nothing at /static (Astro emits /_astro), so handing the path to the Studio
+# costs nothing.
+/static/*  https://mhillestad-studio.netlify.app/static/:splat  200

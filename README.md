@@ -36,7 +36,8 @@ shows a picker between them.
 - Build `npm run build`, publish `dist` (see `www/netlify.toml`)
 - Content is read from Sanity at build time, so a content change needs a
   rebuild — a Sanity webhook fires the Netlify build hook on publish.
-- `www/public/_redirects` proxies `/IndustrialRevolutions/*` to site 2.
+- `www/public/_redirects` proxies `/IndustrialRevolutions/*` to site 2, and
+  `/admin/*` (plus `/static/*`) to site 3.
 - Environment variables: `SANITY_WRITE_TOKEN` (contact form, scoped to
   **functions** only), `SANITY_API_READ_TOKEN` (draft preview).
 
@@ -47,12 +48,22 @@ shows a picker between them.
   `SANITY_MCP_TOKEN`. Do **not** set `KB_OPTIONAL` in production.
 
 **Site 3 — Studio (`mhillestad-studio`):**
-- Base directory: `studio`
-- Build `npm run build`, publish `dist` (see `studio/netlify.toml`)
+- **Not connected to git.** Pushing does not redeploy it; run
+  `cd studio && npm run deploy:admin`, which pins the site id and lets Netlify
+  run the build in `studio/netlify.toml`.
+- Served at **www.mhillestad.com/admin** through a proxy on site 1.
+- The Studio is built for that subpath, and that is a *build-time* decision —
+  it changes where the HTML looks for its assets. `SANITY_STUDIO_BASE_PATH=/admin`
+  is set in the site's own Netlify environment, because `netlify deploy` runs
+  the build command from `netlify.toml`; a locally built `dist` is overwritten.
+  Workspace base paths are prepended with it, so the workspaces are at
+  `/admin/content` and `/admin/inbox`.
+- `npm run build:admin` produces the same bundle locally if you want to inspect
+  it. Plain `npm run build`/`npm run deploy` leave the base path unset, which is
+  what mhillestad-com.sanity.studio needs — it serves from the root.
 - Deploying the schema (`npm run schema:deploy`) is **not** the same as
-  deploying the Studio (`npm run deploy`). The first updates what MCP and agents
-  read; the second rebuilds the app you click around in. A new document type
-  needs both.
+  deploying the Studio. The first updates what MCP and agents read; the second
+  rebuilds the app you click around in. A new document type needs both.
 
 ### Contact form
 

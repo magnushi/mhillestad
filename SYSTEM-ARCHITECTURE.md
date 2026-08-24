@@ -21,7 +21,7 @@ A monorepo deployed as three Netlify sites, all reading one Sanity project
 graph TD
   V["Visitor"] --> WWW["www.mhillestad.com<br/>Netlify: mhillestad"]
   V --> IR["/IndustrialRevolutions<br/>Netlify: mhillestad-indrev<br/>(proxied)"]
-  E["Magnus"] --> ST["Studio<br/>Netlify: mhillestad-studio<br/>+ mhillestad-com.sanity.studio"]
+  E["Magnus"] --> ST["/admin<br/>Netlify: mhillestad-studio<br/>(proxied)<br/>+ mhillestad-com.sanity.studio"]
 
   WWW -->|"read, no token"| PROD[("Sanity: production<br/>PUBLIC read")]
   WWW -->|"write, token"| INBOX[("Sanity: inbox<br/>PRIVATE")]
@@ -34,11 +34,19 @@ graph TD
 |---|---|---|
 | `www/` | `mhillestad` | The CLI-style personal site. Astro, mostly prerendered. |
 | `industrialrevolutions/` | `mhillestad-indrev` | "Canal Mania & the Philosophers Stone" — the AI chat bot. Astro SSR. |
-| `studio/` | `mhillestad-studio` | Sanity Studio. Also deployed to `mhillestad-com.sanity.studio`. |
+| `studio/` | `mhillestad-studio` | Sanity Studio, at `/admin`. Also deployed to `mhillestad-com.sanity.studio`. |
 
-The chat bot is served at `www.mhillestad.com/IndustrialRevolutions` through a
-Netlify proxy rewrite, which is why it is built with
-`base: '/IndustrialRevolutions'`.
+Two of the three are served under paths of the main domain through Netlify
+proxy rewrites in `www/public/_redirects`, which is why each is *built* for its
+prefix: the chat bot with `base: '/IndustrialRevolutions'`, the Studio with
+`SANITY_STUDIO_BASE_PATH=/admin`. A subpath is a build-time fact for both —
+it decides where the HTML looks for its assets — so neither can simply be
+proxied without being rebuilt for the path.
+
+The Studio site is **not connected to git**: it is deployed with
+`npm run deploy:admin`, and `netlify deploy` runs the build command from its
+`netlify.toml`, so the base path must live in that site's Netlify environment
+rather than in a local build.
 
 ---
 
@@ -273,6 +281,10 @@ Things that are true of the code but not of the docs, or vice versa.
   `NETLIFY_SITE_ID=<id>`.
 - `netlify env:set --secret` requires an explicit `--context`, or it reports
   success while storing nothing.
+- `netlify deploy` **runs the build command in `netlify.toml`**, so it discards
+  whatever is already in the publish directory. Build-time configuration has to
+  be in the site's environment; building locally first and deploying the result
+  does not work.
 - Deploying schema (`npm run schema:deploy`) is **not** the same as deploying
   the Studio (`npm run deploy`). The first updates what MCP and agents read; the
   second rebuilds the app you click around in. A new document type needs both.

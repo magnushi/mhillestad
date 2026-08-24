@@ -10,7 +10,9 @@
     "dev": "sanity dev",
     "build": "sanity build",
     "deploy": "sanity deploy",
-    "schema:deploy": "sanity schemas deploy"
+    "schema:deploy": "sanity schemas deploy",
+    "build:admin": "SANITY_STUDIO_BASE_PATH=/admin sanity build",
+    "deploy:admin": "NETLIFY_SITE_ID=807084bc-3b0a-4a7a-b0ab-b0efe924d32f npx netlify deploy --prod"
   },
   "dependencies": {
     "react": "^19.0.0",
