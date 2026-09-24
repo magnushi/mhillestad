@@ -4,6 +4,11 @@
 /IndustrialRevolutions/*  https://mhillestad-indrev.netlify.app/IndustrialRevolutions/:splat  200
 /IndustrialRevolutions    https://mhillestad-indrev.netlify.app/IndustrialRevolutions          200
 
+# The AI Trends chatbot is a separately configured build of the same chat
+# engine, backed by the organization-level Sanity Context Knowledge Base.
+/AITrends/*  https://mhillestad-ai-trends.netlify.app/AITrends/:splat  200
+/AITrends    https://mhillestad-ai-trends.netlify.app/AITrends          200
+
 # Proxy the Sanity Studio (its own Netlify deploy, site "mhillestad-studio") at
 # /admin. It is built with a base path of /admin, so the prefix is passed
 # through rather than stripped — the Studio's own router and asset URLs expect

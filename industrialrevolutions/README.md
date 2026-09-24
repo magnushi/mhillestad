@@ -1,5 +1,10 @@
 # Canal Mania & the Philosophers Stone
 
+> This folder also powers the separate **AI Trends & Development** chatbot.
+> Set `SITE_VARIANT=ai-trends` and `SITE_BASE_PATH=/AITrends` at build time to
+> produce that deployment. Without those variables, the original Industrial
+> Revolutions site remains unchanged.
+
 A chat-only website where a resident AI expert — **The Guide** — discusses
 artificial intelligence through the lens of the industrial revolutions, together
 with the visitor. No login required.
@@ -77,6 +82,19 @@ site (`www/public/_redirects` in this repo). Base directory
 The chat endpoint runs as a Netlify Function, which supports streaming. Set
 `ANTHROPIC_API_KEY`, `SANITY_MCP_URL` and `SANITY_MCP_TOKEN` on the site; do not
 set `KB_OPTIONAL`.
+
+The AI Trends deployment uses the same base directory and build command, plus:
+
+| Variable | Value |
+|---|---|
+| `SITE_VARIANT` | `ai-trends` |
+| `SITE_BASE_PATH` | `/AITrends` |
+| `SANITY_MCP_URL` | Context MCP endpoint serving Knowledge Base `kb1CjEx8bNWb` |
+| `SANITY_MCP_TOKEN` | Organization token with Context Viewer access |
+
+Its prompt treats the knowledge base as the authority, distinguishes facts
+from forecasts, retains source dates, surfaces disagreement, and links to an
+original source when the retrieved entry supplies a URL.
 
 Astro prefixes asset URLs with `base`, so the built page requests
 `/IndustrialRevolutions/_astro/*` while the files are published at the root —
