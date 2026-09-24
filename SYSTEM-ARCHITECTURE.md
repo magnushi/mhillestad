@@ -21,7 +21,7 @@ A monorepo deployed as three Netlify sites, all reading one Sanity project
 graph TD
   V["Visitor"] --> WWW["www.mhillestad.com<br/>Netlify: mhillestad"]
   V --> IR["/IndustrialRevolutions<br/>Netlify: mhillestad-indrev<br/>(proxied)"]
-  V --> AIT["/AITrends<br/>Netlify: mhillestad-ai-trends<br/>(proxied)"]
+  V --> AIT["/signals<br/>Netlify: mhillestad-ai-trends<br/>(proxied, unlisted)"]
   E["Magnus"] --> ST["/admin<br/>Netlify: mhillestad-studio<br/>(proxied)<br/>+ mhillestad-com.sanity.studio"]
 
   WWW -->|"read, no token"| PROD[("Sanity: production<br/>PUBLIC read")]
@@ -36,7 +36,7 @@ graph TD
 |---|---|---|
 | `www/` | `mhillestad` | The CLI-style personal site. Astro, mostly prerendered. |
 | `industrialrevolutions/` | `mhillestad-indrev` | "Canal Mania & the Philosophers Stone" — the AI chat bot. Astro SSR. |
-| `industrialrevolutions/` | `mhillestad-ai-trends` | "AI Trends & Development" — a separately configured build of the chat bot served at `/AITrends`. |
+| `industrialrevolutions/` | `mhillestad-ai-trends` | "AI Trends & Development" — a separately configured build of the chat bot served at the unlisted `/signals` path. |
 | `studio/` | `mhillestad-studio` | Sanity Studio, at `/admin`. Also deployed to `mhillestad-com.sanity.studio`. |
 
 Two of the three are served under paths of the main domain through Netlify
@@ -155,7 +155,7 @@ A chat-only site where a resident AI expert discusses AI through the lens of the
 industrial revolutions. Astro 7, `output: 'server'`, Netlify adapter.
 
 The same codebase also builds the AI Trends chatbot. That Netlify deployment
-sets `SITE_VARIANT=ai-trends` and `SITE_BASE_PATH=/AITrends`, swaps in a prompt
+sets `SITE_VARIANT=ai-trends` and `SITE_BASE_PATH=/signals`, swaps in a prompt
 focused on evidence, dates, disagreement and citations, and points the MCP
 variables at the organization-level Context endpoint for Knowledge Base
 `kb1CjEx8bNWb`. The original variant is the default, so its production build

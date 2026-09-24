@@ -8,7 +8,7 @@ chat reads an organization-level Sanity Context Knowledge Base.
 |---|---|---|
 | `www/` | `mhillestad` — www.mhillestad.com | CLI-style personal site. Astro; the public pages are prerendered from Sanity at build time. |
 | `industrialrevolutions/` | `mhillestad-indrev` — served at www.mhillestad.com/IndustrialRevolutions | "Canal Mania & the Philosophers Stone" — AI chat about the industrial revolutions and the AI revolution. Astro SSR + Anthropic API + Sanity knowledge base. See its own README. |
-| `industrialrevolutions/` | `mhillestad-ai-trends` — served at www.mhillestad.com/AITrends | AI Trends & Development — the same hardened chat engine, built as a separate variant against a Sanity Context Knowledge Base. |
+| `industrialrevolutions/` | `mhillestad-ai-trends` — served at www.mhillestad.com/signals | AI Trends & Development — the same hardened chat engine, built as a separate variant against a Sanity Context Knowledge Base. The path is intentionally absent from site navigation. |
 | `studio/` | `mhillestad-studio` — also at mhillestad-com.sanity.studio | Sanity Studio. One workspace per dataset. |
 
 `SYSTEM-ARCHITECTURE.md` explains how the pieces fit together and why, in more

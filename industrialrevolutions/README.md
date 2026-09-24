@@ -1,7 +1,7 @@
 # Canal Mania & the Philosophers Stone
 
 > This folder also powers the separate **AI Trends & Development** chatbot.
-> Set `SITE_VARIANT=ai-trends` and `SITE_BASE_PATH=/AITrends` at build time to
+> Set `SITE_VARIANT=ai-trends` and `SITE_BASE_PATH=/signals` at build time to
 > produce that deployment. Without those variables, the original Industrial
 > Revolutions site remains unchanged.
 
@@ -88,7 +88,7 @@ The AI Trends deployment uses the same base directory and build command, plus:
 | Variable | Value |
 |---|---|
 | `SITE_VARIANT` | `ai-trends` |
-| `SITE_BASE_PATH` | `/AITrends` |
+| `SITE_BASE_PATH` | `/signals` |
 | `SANITY_MCP_URL` | Context MCP endpoint serving Knowledge Base `kb1CjEx8bNWb` |
 | `SANITY_MCP_TOKEN` | Organization token with Context Viewer access |
 

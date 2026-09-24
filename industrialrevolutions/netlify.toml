@@ -14,7 +14,7 @@
   status = 200
 
 [[redirects]]
-  from = "/AITrends/_astro/*"
+  from = "/signals/_astro/*"
   to = "/_astro/:splat"
   status = 200
 
@@ -24,5 +24,5 @@
 #   SANITY_MCP_TOKEN    — Sanity API token (read)
 # Optional per-deployment settings:
 #   SITE_VARIANT        — "ai-trends" for the AI Trends deployment
-#   SITE_BASE_PATH      — "/AITrends" for the AI Trends deployment
+#   SITE_BASE_PATH      — "/signals" for the private AI Trends deployment
 # Do NOT set KB_OPTIONAL in production.
