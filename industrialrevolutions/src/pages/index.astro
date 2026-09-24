@@ -1,7 +1,12 @@
 ---
 import { PERSONAS, ENABLED_PERSONAS } from '../lib/personas';
+import { SITE } from '../lib/site';
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
+const names = Object.fromEntries([
+  ['user', 'You'],
+  ...personas.map((persona) => [persona.id, persona.name]),
+]);
 ---
 
 <!doctype html>
@@ -9,10 +14,10 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Canal Mania and the Philosophers Stone</title>
+    <title>{SITE.title}</title>
     <meta
       name="description"
-      content="A knowledge base of AI in the perspective of the industrial revolutions — in conversation with the Guide."
+      content={SITE.description}
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,8 +29,8 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
   <body>
     <main>
       <header>
-        <h1>Canal Mania <span class="amp">&</span> the Philosophers Stone</h1>
-        <p class="tagline">A knowledge base of AI in the perspective of the industrial revolutions</p>
+        <h1>{SITE.title}</h1>
+        <p class="tagline">{SITE.tagline}</p>
         <div class="guides">
           {
             personas.map((p) => (
@@ -44,7 +49,7 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
           id="input"
           type="text"
           maxlength="2000"
-          placeholder="Ask about AI and the industrial revolutions…"
+          placeholder={SITE.placeholder}
           aria-label="Your message"
           required
         />
@@ -52,19 +57,14 @@ const personas = ENABLED_PERSONAS.map((id) => PERSONAS[id]);
       </form>
       <p class="footnote" id="status"></p>
       <footer class="credits">
-        Built on 16 curated sources on the industrial revolutions and the AI revolution —
+        {SITE.sourceSummary} —
         <a href={`${base}/sources`}>sources &amp; credits</a>. For educational and entertainment
         purposes only.
       </footer>
     </main>
 
-    <script define:vars={{ base }}>
-      const NAMES = {
-        user: 'You',
-        guide: 'The Guide',
-        historian: 'The Historian',
-        technologist: 'The Technologist',
-      };
+    <script define:vars={{ base, names }}>
+      const NAMES = names;
 
       const chat = document.getElementById('chat');
       const form = document.getElementById('composer');
